@@ -238,6 +238,11 @@
   .mini-seal { display: inline-flex; align-items: center; justify-content: center; width: 1.2rem; height: 1.2rem; border-radius: 50%; background: var(--indigo); color: #fff; font-family: var(--mincho); font-weight: 700; font-size: .68rem; margin-right: .5rem; }
   .agree-count { color: var(--indigo); font-weight: 500; margin-left: .6rem; }
 
+  /* 閲覧履歴 */
+  #historyBox h2 { display: flex; align-items: baseline; gap: .8rem; }
+  #historyBox h2 .note { font-family: var(--gothic); font-weight: 400; font-size: .75rem; letter-spacing: 0; color: var(--ink-soft); }
+  #clearHistory { margin: 0 0 0 auto; font-family: var(--gothic); font-weight: 500; letter-spacing: 0; }
+
   /* アカウントの削除 */
   #deleteBox { background: var(--sheet); border: 1px solid var(--rule); padding: .9rem 1.4rem; }
   #deleteBox details { border: none; padding: 0; }
@@ -320,6 +325,10 @@
     <label>ジャンル <select id="thesisCategory"></select></label>
     <textarea id="thesisBody" maxlength="5000" placeholder="例：自由意志は存在するのか？"></textarea>
     <button id="thesisBtn">投稿</button>
+  </section>
+  <section id="historyBox" class="hidden">
+    <h2>最近見た問い <span class="note">この端末にだけ保存されます</span><button id="clearHistory" class="small">履歴を消す</button></h2>
+    <ul id="historyList" class="recent"></ul>
   </section>
   <section>
     <h2>この24時間で盛り上がっている問い</h2>
@@ -522,6 +531,7 @@ let recentPosts = [];
 const DAY = 24 * 60 * 60 * 1000;
 
 function startHome() {
+  renderHistory();
   // 問いの一覧
   onSnapshot(query(collection(db, "posts"), where("parentId", "==", null)), (snap) => {
     allTheses = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
@@ -621,6 +631,39 @@ async function renderRecent() {
   box.replaceChildren(...items);
 }
 
+// ============ 閲覧履歴（この端末のブラウザにだけ保存。サーバーには送らない） ============
+const HISTORY_KEY = "viewHistory";
+const HISTORY_MAX = 10;
+function loadHistory() {
+  try { return JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; } catch (e) { return []; }
+}
+function addHistory(root) {
+  try {
+    const list = loadHistory().filter((h) => h.id !== root.id);   // 同じ問いは最新の1件だけ
+    list.unshift({ id: root.id, body: short(root.body, 60), category: root.category || null, viewedAt: Date.now() });
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(list.slice(0, HISTORY_MAX)));
+  } catch (e) {}
+}
+function renderHistory() {
+  const list = loadHistory();
+  $("historyBox").classList.toggle("hidden", list.length === 0);
+  $("historyList").replaceChildren(...list.map((h) => {
+    const li = el("li");
+    const a = el("a");
+    a.href = threadUrl(h.id);
+    const meta = el("div", "meta");
+    meta.append(el("span", "cat", catName(h.category)),
+                document.createTextNode(new Date(h.viewedAt).toLocaleString("ja-JP") + " に閲覧"));
+    a.append(el("div", "text", h.body), meta);
+    li.append(a);
+    return li;
+  }));
+}
+$("clearHistory").onclick = () => {
+  try { localStorage.removeItem(HISTORY_KEY); } catch (e) {}
+  renderHistory();
+};
+
 // ============ 問いのページ ============
 let currentRootId = null;
 let agreeMap = {};              // 投稿ID → 「一理ある」を押した人のIDの一覧
@@ -629,14 +672,17 @@ let openForm = null;            // 開いている書き込み欄 { parentId, st
 
 function startThread(rootId) {
   currentRootId = rootId;
+  let recorded = false;
   $("homeView").classList.add("hidden");
   $("debateView").classList.remove("hidden");
   onSnapshot(query(collection(db, "posts"), where("rootId", "==", rootId)), (snap) => {
     nodes = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-    if (!nodes.find((n) => n.id === rootId)) {
+    const root = nodes.find((n) => n.id === rootId);
+    if (!root) {
       $("debateBox").textContent = "この問いは見つかりませんでした。";
       return;
     }
+    if (!recorded) { addHistory(root); recorded = true; }   // 閲覧履歴に記録（開いたときに1回）
     renderDebate();
   }, () => { $("debateBox").textContent = "読み込めませんでした。"; });
   onSnapshot(query(collection(db, "agrees"), where("rootId", "==", rootId)), (snap) => {
