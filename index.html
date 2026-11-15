@@ -251,6 +251,12 @@
   .folded { font-size: .85rem; color: var(--ink-soft); background: #eceee9; border-radius: 4px; padding: .4rem .7rem; margin: .3rem 0 .4rem; }
   .folded button { margin: 0 0 0 .5rem; }
 
+  /* メール確認・もっと見る */
+  #verifyBox { border-color: var(--con); }
+  #verifyBox p { margin: 0 0 .6rem; font-size: .9rem; }
+  #moreBtn { display: block; margin: .8rem auto 0; }
+  #moreBtn.hidden { display: none; }
+
   /* 閲覧履歴 */
   #historyBox h2 { display: flex; align-items: baseline; gap: .8rem; }
   #historyBox h2 .note { font-family: var(--gothic); font-weight: 400; font-size: .75rem; letter-spacing: 0; color: var(--ink-soft); }
@@ -331,6 +337,13 @@
   <b id="me"></b> としてログイン中 <a id="myLink" href="?me">マイページ</a><button id="logoutBtn" class="small">ログアウト</button>
 </section>
 
+<!-- メールアドレスの確認がまだの人への案内 -->
+<section id="verifyBox" class="hidden">
+  <p><b>メールアドレスの確認がまだです。</b>登録したアドレスに届いたメールのリンクを開いてから、「確認しました」を押してください。確認が済むと、問いや答え・コメントの投稿、「一理ある」、通報ができるようになります。</p>
+  <button id="verifiedBtn" class="small">確認しました</button>
+  <button id="resendBtn" class="small">確認メールをもう一度送る</button>
+</section>
+
 <!-- 一覧画面 -->
 <div id="homeView">
   <section id="newThesisBox" class="hidden">
@@ -355,6 +368,7 @@
     <h2>問いの一覧</h2>
     <label>ジャンルで絞り込む <select id="filterCategory"></select></label>
     <div id="thesisList">読み込み中…</div>
+    <button id="moreBtn" class="small hidden">もっと見る</button>
   </section>
 </div>
 
@@ -495,13 +509,41 @@ $("resetBtn").onclick = async () => {
 
 $("logoutBtn").onclick = () => signOut(auth);
 
-onAuthStateChanged(auth, async (user) => {
+// ログイン状態・メール確認状態に合わせて表示を切り替える
+const canWrite = () => !!auth.currentUser && auth.currentUser.emailVerified;
+async function refreshAuthUI(user) {
   $("authBox").classList.toggle("hidden", !!user);
   $("userBox").classList.toggle("hidden", !user);
-  $("newThesisBox").classList.toggle("hidden", !user);
+  $("verifyBox").classList.toggle("hidden", !user || user.emailVerified);
+  $("newThesisBox").classList.toggle("hidden", !canWrite());
   if (user) $("me").textContent = await getName(user.uid);
-  if (currentRootId) renderDebate();   // ログイン状態で書き込みボタンの表示が変わる
-});
+  if (currentRootId) renderDebate();   // 書き込みボタンの表示が変わる
+}
+onAuthStateChanged(auth, (user) => refreshAuthUI(user));
+
+// メール確認の状態を読み直す（リンクを開いたあとに押してもらう）
+$("verifiedBtn").onclick = async () => {
+  const user = auth.currentUser;
+  if (!user) return;
+  try {
+    await user.reload();
+    await user.getIdToken(true);   // 確認済みの情報を、データベース側にも伝える
+  } catch (e) {}
+  if (auth.currentUser.emailVerified) {
+    say("確認できました。投稿できるようになりました。");
+  } else {
+    say("まだ確認できていません。メールのリンクを開いてから、もう一度押してください。");
+  }
+  refreshAuthUI(auth.currentUser);
+};
+$("resendBtn").onclick = async () => {
+  try {
+    await sendEmailVerification(auth.currentUser);
+    say("確認メールを送りました。届かない場合は、迷惑メールフォルダも確認してください。");
+  } catch (e) {
+    say("送信できませんでした。少し時間をおいてから、もう一度お試しください。");
+  }
+};
 
 // ---------- 投稿の保存 ----------
 async function savePost({ body, parentId, rootId, stance, category, parentAuthorId }) {
@@ -542,27 +584,39 @@ const bodyOf = (p) => (isHidden(p) ? "（通報が多いため折りたたまれ
 const EDIT_MIN = 15;                                          // 投稿してから編集できる時間（分）
 const editLeft = (p) => (p.createdAt ? Math.ceil((p.createdAt.toMillis() + EDIT_MIN * 60000 - Date.now()) / 60000) : 0);
 
+// ============ 問いのデータ（一度読んだ問いは覚えておく） ============
+const thesisStore = {};
+async function thesisData(id) {
+  if (!(id in thesisStore)) {
+    try {
+      const snap = await getDoc(doc(db, "posts", id));
+      thesisStore[id] = snap.exists() ? { id, ...snap.data() } : null;
+    } catch (e) {
+      thesisStore[id] = null;
+    }
+  }
+  return thesisStore[id];
+}
+
 // ============ トップページ ============
-let allTheses = [];
+const PAGE = 20;                // 問いの一覧を一度に読む件数
+let listLimit = PAGE;
+let listTheses = [];
+let unsubList = null;
 let dayPosts = [];
 let recentPosts = [];
 const DAY = 24 * 60 * 60 * 1000;
 
 function startHome() {
   renderHistory();
-  // 問いの一覧
-  onSnapshot(query(collection(db, "posts"), where("parentId", "==", null)), (snap) => {
-    allTheses = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
-                         .sort((a, b) => timeOf(b) - timeOf(a));
-    renderList();
-    renderRanking();
-    renderRecent();
-  }, () => { $("thesisList").textContent = "読み込めませんでした。"; });
-  $("filterCategory").onchange = () => renderList();
+  subscribeList();
+  $("filterCategory").onchange = () => { listLimit = PAGE; subscribeList(); };
+  $("moreBtn").onclick = () => { listLimit += PAGE; subscribeList(); };
 
   // この24時間の書き込み（ランキング用）
   onSnapshot(query(collection(db, "posts"), where("createdAt", ">=", Timestamp.fromMillis(Date.now() - DAY))), (snap) => {
     dayPosts = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    for (const p of dayPosts) if (!p.parentId) thesisStore[p.id] = p;
     renderRanking();
   }, () => { $("rankList").replaceChildren(el("li", "empty", "読み込めませんでした。")); });
   setInterval(() => renderRanking(), 5 * 60 * 1000);   // 5分ごとに24時間の範囲を更新
@@ -570,16 +624,34 @@ function startHome() {
   // 新着10件
   onSnapshot(query(collection(db, "posts"), orderBy("createdAt", "desc"), limit(10)), (snap) => {
     recentPosts = snap.docs.map((d) => ({ id: d.id, ...d.data() })).filter((p) => p.rootId);
+    for (const p of recentPosts) if (!p.parentId) thesisStore[p.id] = p;
     renderRecent();
   }, () => { $("recentList").replaceChildren(el("li", "empty", "読み込めませんでした。")); });
 }
 
+// 問いの一覧：新しい順に20件ずつ読む（ジャンルで絞り込んだときも同じ）
+function subscribeList() {
+  if (unsubList) unsubList();
+  const filter = $("filterCategory").value;
+  const posts = collection(db, "posts");
+  const q = filter
+    ? query(posts, where("category", "==", filter), orderBy("createdAt", "desc"), limit(listLimit))
+    : query(posts, where("parentId", "==", null), orderBy("createdAt", "desc"), limit(listLimit));
+  unsubList = onSnapshot(q, (snap) => {
+    listTheses = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    for (const t of listTheses) thesisStore[t.id] = t;
+    $("moreBtn").classList.toggle("hidden", snap.size < listLimit);   // まだ続きがありそうなら表示
+    renderList();
+  }, (e) => {
+    console.error(e);   // インデックスが未作成のときは、ここに作成用のリンクが出る
+    $("thesisList").textContent = "読み込めませんでした。";
+  });
+}
+
 async function renderList() {
   const box = $("thesisList");
-  const filter = $("filterCategory").value;
-  const theses = filter ? allTheses.filter((t) => t.category === filter) : allTheses;
-  if (theses.length === 0) { box.textContent = "まだ問いがありません。"; return; }
-  const items = await Promise.all(theses.map(async (t) => {
+  if (listTheses.length === 0) { box.textContent = "まだ問いがありません。"; return; }
+  const items = await Promise.all(listTheses.map(async (t) => {
     const a = el("a", "thesis-item");
     a.href = threadUrl(t.id);
     const meta = el("div", "meta");
@@ -592,18 +664,16 @@ async function renderList() {
 }
 
 // この24時間で盛り上がっている問い（答え・コメントの数）
-function renderRanking() {
+async function renderRanking() {
   const since = Date.now() - DAY;
   const counts = {};
   for (const p of dayPosts) {
     if (!p.parentId || !p.rootId || timeOf(p) < since) continue;   // 問いそのものは数えない
     counts[p.rootId] = (counts[p.rootId] || 0) + 1;
   }
-  const top = Object.entries(counts)
-    .map(([rootId, n]) => ({ thesis: allTheses.find((t) => t.id === rootId), n }))
-    .filter((r) => r.thesis)
-    .sort((a, b) => b.n - a.n)
-    .slice(0, 5);
+  const ranked = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  const top = (await Promise.all(ranked.map(async ([rootId, n]) => ({ thesis: await thesisData(rootId), n }))))
+    .filter((r) => r.thesis);
   const box = $("rankList");
   if (top.length === 0) {
     box.replaceChildren(el("li", "empty", "この24時間の書き込みはまだありません。気になる問いに答えてみましょう。"));
@@ -640,7 +710,7 @@ async function renderRecent() {
     head.append(document.createTextNode((await getName(p.authorId)) + "　" + whenText(p)));
     a.append(head, el("div", "text", short(bodyOf(p), 80)));
     if (p.parentId) {
-      const thesis = allTheses.find((t) => t.id === p.rootId);
+      const thesis = await thesisData(p.rootId);
       if (thesis) a.append(el("div", "about", "問い：" + short(bodyOf(thesis), 40)));
     }
     li.append(a);
@@ -825,9 +895,11 @@ function agreeButton(target) {
   } else {
     b.querySelector(".seal").style.animation = "none";
   }
-  if (!me || target.authorId === me.uid) {
-    b.disabled = true;               // ログインしていない、または自分の投稿
-    b.title = me ? "自分の投稿には押せません" : "ログインすると押せます";
+  if (!me || !me.emailVerified || target.authorId === me.uid) {
+    b.disabled = true;               // ログインしていない、メール未確認、または自分の投稿
+    b.title = !me ? "ログインすると押せます"
+            : !me.emailVerified ? "メールアドレスの確認が済むと押せます"
+            : "自分の投稿には押せません";
     return b;
   }
   b.onclick = async () => {
@@ -899,6 +971,10 @@ function actions(target) {
   if (!isThesis) row.append(agreeButton(target));
   if (!me) {
     if (isThesis) box.append(el("p", "meta", "ログインすると、答えやコメントを書けます。"));
+    return box;
+  }
+  if (!me.emailVerified) {
+    if (isThesis) box.append(el("p", "meta", "メールアドレスの確認が済むと、答えやコメントを書けます。"));
     return box;
   }
   const kinds = isThesis ? ["answer"] : ["pro", "con"];
@@ -974,19 +1050,6 @@ function actions(target) {
 }
 
 // ============ マイページ（本人だけが見られる） ============
-const thesisCache = {};
-async function getThesis(rootId) {
-  if (!(rootId in thesisCache)) {
-    try {
-      const snap = await getDoc(doc(db, "posts", rootId));
-      thesisCache[rootId] = snap.exists() ? snap.data().body : "";
-    } catch (e) {
-      thesisCache[rootId] = "";
-    }
-  }
-  return thesisCache[rootId];
-}
-
 // 前回マイページを開いた時刻（この端末のブラウザにだけ保存。新着の印に使う）
 function lastVisit(uid) {
   try { return Number(localStorage.getItem("myVisit_" + uid)) || 0; } catch (e) { return 0; }
@@ -1082,8 +1145,8 @@ async function renderMyPage(uid, since, myPosts, replies, agrees) {
     if (agreeCount[p.id]) head.append(el("span", "agree-count", "一理ある " + agreeCount[p.id]));
     link.append(head, el("div", "text", short(p.body, 80)));
     if (p.parentId && p.rootId) {
-      const t = await getThesis(p.rootId);
-      if (t) link.append(el("div", "about", "問い：" + short(t, 40)));
+      const t = await thesisData(p.rootId);
+      if (t) link.append(el("div", "about", "問い：" + short(bodyOf(t), 40)));
     }
     li.append(link);
     return li;
