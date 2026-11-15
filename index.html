@@ -401,6 +401,12 @@
     <h2>自分の投稿</h2>
     <ul id="myPostList" class="recent"><li class="empty">読み込み中…</li></ul>
   </section>
+    <section id="nameBox" class="hidden">
+    <h2>仮名の変更</h2>
+    <p class="meta" id="nameNote"></p>
+    <label>新しい仮名（30字まで）<input id="newName" maxlength="30"></label>
+    <button id="nameBtn" class="small">変更する</button>
+  </section>
   <section id="deleteBox" class="hidden">
     <details>
       <summary><b>アカウントの削除</b></summary>
@@ -1089,6 +1095,7 @@ function startMyPage(user) {
   if (myStarted) return;
   myStarted = true;
   setupDelete(user);
+  setupNameChange(user);
   const since = lastVisit(user.uid);
   let myPosts = [], replies = [], agrees = [];
   const draw = () => renderMyPage(user.uid, since, myPosts, replies, agrees);
@@ -1172,7 +1179,40 @@ async function renderMyPage(uid, since, myPosts, replies, agrees) {
   $("myPostList").replaceChildren(...(postItems.length ? postItems
     : [el("li", "empty", "まだ投稿がありません。")]));
 }
-
+// 仮名の変更（30日に1回まで。制限はセキュリティルールでもかけている）
+const NAME_DAYS = 30;
+function setupNameChange(user) {
+  $("nameBox").classList.remove("hidden");
+  const ref = doc(db, "users", user.uid);
+  const refresh = async () => {
+    let data = {};
+    try { const snap = await getDoc(ref); if (snap.exists()) data = snap.data(); } catch (e) {}
+    $("newName").value = data.displayName || "";
+    const next = data.nameChangedAt ? data.nameChangedAt.toMillis() + NAME_DAYS * DAY : 0;
+    const can = user.emailVerified && Date.now() > next;
+    $("nameBtn").disabled = !can;
+    $("nameNote").textContent =
+      !user.emailVerified ? "メールアドレスの確認が済むと変更できます。"
+      : can ? "仮名の変更は30日に1回までです。変更すると、これまでの投稿に表示される名前も新しい仮名に変わります。"
+      : new Date(next).toLocaleString("ja-JP") + " 以降に、もう一度変更できます。";
+  };
+  $("nameBtn").onclick = async () => {
+    const name = $("newName").value.trim();
+    if (!name) return say("新しい仮名を入力してください。");
+    if (name === nameCache[user.uid]) return say("今と同じ仮名です。");
+    $("nameBtn").disabled = true;
+    try {
+      await updateDoc(ref, { displayName: name, nameChangedAt: serverTimestamp() });
+      nameCache[user.uid] = name;
+      $("me").textContent = name;
+      say("仮名を「" + name + "」に変更しました。");
+    } catch (e) {
+      say("変更できませんでした。仮名の変更は30日に1回までです。");
+    }
+    refresh();
+  };
+  refresh();
+}
 // アカウントの削除（パスワードで本人確認 → 仮名を消去 → アカウントを削除）
 function setupDelete(user) {
   $("deleteBox").classList.remove("hidden");
