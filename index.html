@@ -181,6 +181,26 @@
   .label.pro { color: var(--pro); }
   .label.con { color: var(--con); }
 
+  /* 一理あるボタン：「理」の丸い印。押すと印が押される */
+  .agree {
+    display: inline-flex; align-items: center; gap: .4rem;
+    background: transparent; color: var(--ink-soft);
+    border: 1px solid transparent; border-radius: 6px;
+    font-size: .8rem; padding: .1rem .55rem .1rem .25rem; margin: 0 .4rem .3rem 0;
+  }
+  .agree:hover { background: #e3e7ef; color: var(--indigo); }
+  .agree[disabled] { cursor: default; }
+  .agree[disabled]:hover { background: transparent; color: var(--ink-soft); }
+  .seal {
+    width: 1.45rem; height: 1.45rem; border-radius: 50%;
+    border: 1.5px solid currentColor;
+    font-family: var(--mincho); font-weight: 700; font-size: .78rem;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .agree.on { color: var(--indigo); font-weight: 700; }
+  .agree.on .seal { background: var(--indigo); border-color: var(--indigo); color: #fff; animation: stamp .22s ease-out; }
+  @keyframes stamp { from { transform: scale(1.35) rotate(-12deg); opacity: .4; } to { transform: none; opacity: 1; } }
+
   /* 盛り上がっている問い・新着 */
   .rank, .recent { list-style: none; margin: 0; padding: 0; }
   .rank li, .recent li { border-top: 1px solid var(--rule); cursor: pointer; }
@@ -205,7 +225,7 @@
     .node { margin-left: 0; padding-left: .75rem; }
     select { min-width: 0; width: 100%; }
   }
-  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>
 </head>
 <body>
@@ -287,7 +307,7 @@ import {
   signOut, onAuthStateChanged, sendPasswordResetEmail, sendEmailVerification
 } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
 import {
-  getFirestore, doc, setDoc, getDoc, collection,
+  getFirestore, doc, setDoc, getDoc, deleteDoc, collection,
   query, where, orderBy, limit, onSnapshot, serverTimestamp, Timestamp
 } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
 
@@ -452,7 +472,7 @@ async function renderList() {
 }
 
 // ---------- この24時間で盛り上がっている問い ----------
-// 直近24時間の投稿を読み、コメント（コメント）の数を問いごとに数える
+// 直近24時間の投稿を読み、コメントの数を問いごとに数える
 const DAY = 24 * 60 * 60 * 1000;
 let dayPosts = [];
 onSnapshot(query(collection(db, "posts"), where("createdAt", ">=", Timestamp.fromMillis(Date.now() - DAY))), (snap) => {
@@ -525,6 +545,8 @@ async function renderRecent() {
 // ---------- 議論画面 ----------
 let currentRootId = null;
 let unsubscribe = null;
+let unsubscribeAgrees = null;
+let agreeMap = {};              // コメントID → 押した人のIDの一覧
 let nodes = [];                 // この議論のすべての投稿
 let openForm = null;            // 開いている書き込み欄 { parentId, stance, text }
 
@@ -540,12 +562,25 @@ function openDebate(rootId) {
     nodes = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
     renderDebate();
   }, () => { $("debateBox").textContent = "読み込めませんでした。"; });
+  // この議論の「一理ある」をまとめて読み、コメントごとに数える
+  agreeMap = {};
+  if (unsubscribeAgrees) unsubscribeAgrees();
+  unsubscribeAgrees = onSnapshot(query(collection(db, "agrees"), where("rootId", "==", rootId)), (snap) => {
+    agreeMap = {};
+    for (const d of snap.docs) {
+      const a = d.data();
+      (agreeMap[a.postId] = agreeMap[a.postId] || []).push(a.uid);
+    }
+    renderDebate();
+  });
   window.scrollTo(0, 0);
 }
 
 $("backLink").onclick = () => {
   if (unsubscribe) unsubscribe();
+  if (unsubscribeAgrees) unsubscribeAgrees();
   unsubscribe = null;
+  unsubscribeAgrees = null;
   currentRootId = null;
   $("debateView").classList.add("hidden");
   $("homeView").classList.remove("hidden");
@@ -589,9 +624,49 @@ function childList(parentId, children) {
   return wrap;
 }
 
+// 「一理ある」ボタン（コメントにだけ付ける。自分のコメントには押せない）
+let lastStamped = null;
+function agreeButton(target) {
+  const me = auth.currentUser;
+  const uids = agreeMap[target.id] || [];
+  const info = { count: uids.length, mine: !!me && uids.includes(me.uid) };
+  const b = el("button", "agree" + (info.mine ? " on" : ""));
+  b.title = "結論に同意するかどうかではなく、よい指摘だと思ったら押してください";
+  b.setAttribute("aria-pressed", info.mine ? "true" : "false");
+  b.append(el("span", "seal", "理"), el("span", "", "一理ある" + (info.count ? " " + info.count : "")));
+  if (info.mine && lastStamped === target.id) {
+    setTimeout(() => { lastStamped = null; }, 300);   // 押した直後だけ印のアニメーション
+  } else {
+    b.querySelector(".seal").style.animation = "none";
+  }
+  if (!me || target.authorId === me.uid) {
+    b.disabled = true;               // ログインしていない、または自分のコメント
+    if (!me) b.title = "ログインすると押せます";
+    else b.title = "自分のコメントには押せません";
+    return b;
+  }
+  b.onclick = async () => {
+    const ref = doc(db, "agrees", target.id + "_" + me.uid);
+    try {
+      if (info.mine) {
+        lastStamped = null;
+        await deleteDoc(ref);
+      } else {
+        lastStamped = target.id;
+        await setDoc(ref, { postId: target.id, rootId: currentRootId, uid: me.uid, createdAt: serverTimestamp() });
+      }
+      say("");
+    } catch (e) {
+      say("「一理ある」を記録できませんでした。");
+    }
+  };
+  return b;
+}
+
 // 「賛成する／反対する」ボタンと書き込み欄
 function actions(target) {
   const box = el("div");
+  if (target.parentId) box.append(agreeButton(target));
   if (!auth.currentUser) return box;
   for (const stance of ["pro", "con"]) {
     const b = el("button", "small", stance === "pro" ? "賛成のコメントを書く" : "反対のコメントを書く");
