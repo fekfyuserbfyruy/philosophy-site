@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>哲学の問い（試作版）</title>
-  <!-- SNSで共有したときの表示（OGP） -->
+<!-- SNSで共有したときの表示（OGP） -->
 <meta name="description" content="哲学の問いを立て、答えを書き、賛成・反対のコメントを重ねて考えを深める場所です。">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="哲学の問い">
@@ -231,6 +231,13 @@
   .recent .about { font-size: .8rem; color: var(--ink-soft); }
   .tag-thesis { display: inline-block; font-size: .72rem; color: var(--ink-soft); border: 1px solid var(--rule); border-radius: 2px; padding: 0 .35rem; margin-right: .6rem; line-height: 1.5; }
   .empty { font-size: .9rem; color: var(--ink-soft); }
+
+  /* マイページ */
+  #myLink { margin-left: .6rem; font-size: .85rem; }
+  .new-badge { display: inline-block; font-size: .7rem; font-weight: 700; color: #fff; background: var(--con); border-radius: 2px; padding: 0 .35rem; margin-left: .5rem; line-height: 1.5; }
+  .mini-seal { display: inline-flex; align-items: center; justify-content: center; width: 1.2rem; height: 1.2rem; border-radius: 50%; background: var(--indigo); color: #fff; font-family: var(--mincho); font-weight: 700; font-size: .68rem; margin-right: .5rem; }
+  .agree-count { color: var(--indigo); font-weight: 500; margin-left: .6rem; }
+
   /* 共有ボタン */
   .share-row { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin: .1rem 0 1.1rem; font-size: .8rem; color: var(--ink-soft); }
   .share {
@@ -240,6 +247,7 @@
     padding: .15rem .8rem; margin: 0; text-decoration: none; cursor: pointer;
   }
   .share:hover { color: var(--indigo); border-color: var(--indigo); background: transparent; }
+
   @media (max-width: 520px) {
     body { padding: 0 .9rem 3rem; }
     h1 { font-size: 1.6rem; margin-top: 2rem; }
@@ -291,7 +299,7 @@
 </section>
 
 <section id="userBox" class="hidden">
-  <b id="me"></b> としてログイン中　<button id="logoutBtn" class="small">ログアウト</button>
+  <b id="me"></b> としてログイン中 <a id="myLink" href="?me">マイページ</a><button id="logoutBtn" class="small">ログアウト</button>
 </section>
 
 <!-- 一覧画面 -->
@@ -321,6 +329,19 @@
 <div id="debateView" class="hidden">
   <p><a id="backLink" href="./">← 問いの一覧に戻る</a></p>
   <section id="debateBox">読み込み中…</section>
+</div>
+
+<!-- マイページ -->
+<div id="myView" class="hidden">
+  <p><a href="./">← トップに戻る</a></p>
+  <section>
+    <h2>自分への反応</h2>
+    <ul id="reactList" class="recent"><li class="empty">読み込み中…</li></ul>
+  </section>
+  <section>
+    <h2>自分の投稿</h2>
+    <ul id="myPostList" class="recent"><li class="empty">読み込み中…</li></ul>
+  </section>
 </div>
 
 <script type="module">
@@ -439,7 +460,7 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 // ---------- 投稿の保存 ----------
-async function savePost({ body, parentId, rootId, stance, category }) {
+async function savePost({ body, parentId, rootId, stance, category, parentAuthorId }) {
   const ref = doc(collection(db, "posts"));      // 先にIDを決める
   await setDoc(ref, {
     authorId: auth.currentUser.uid,
@@ -448,7 +469,8 @@ async function savePost({ body, parentId, rootId, stance, category }) {
     parentId: parentId,                          // 問いなら null
     rootId: rootId || ref.id,                    // 問いなら自分自身のID
     stance: stance,                              // "answer" / "pro" / "con"、問いなら null
-    category: category || null                   // 問いのジャンル、コメントなら null
+    category: category || null,                  // 問いのジャンル、コメントなら null
+    parentAuthorId: parentAuthorId || null       // 返信先の投稿者（マイページの「自分への反応」用）
   });
   return ref.id;
 }
@@ -631,6 +653,7 @@ async function renderDebate() {
   top.append(childList(root.id, children));
   $("debateBox").replaceChildren(top);
 }
+
 // SNSで共有するボタン（X・LINE・リンクをコピー）
 function shareRow(root) {
   const url = location.origin + location.pathname + threadUrl(root.id);
@@ -655,6 +678,7 @@ function shareRow(root) {
   row.append(x, line, copy);
   return row;
 }
+
 // ある投稿の下にぶら下がるツリー
 function childList(parentId, children) {
   const wrap = el("div");
@@ -697,7 +721,7 @@ function agreeButton(target) {
         await deleteDoc(ref);
       } else {
         lastStamped = target.id;
-        await setDoc(ref, { postId: target.id, rootId: currentRootId, uid: me.uid, createdAt: serverTimestamp() });
+        await setDoc(ref, { postId: target.id, rootId: currentRootId, uid: me.uid, postAuthorId: target.authorId, createdAt: serverTimestamp() });
       }
       say("");
     } catch (e) {
@@ -740,7 +764,7 @@ function actions(target) {
       const body = ta.value.trim();
       if (!body) return say("内容を入力してください。");
       try {
-        await savePost({ body, parentId: target.id, rootId: currentRootId, stance: openForm.stance });
+        await savePost({ body, parentId: target.id, rootId: currentRootId, stance: openForm.stance, parentAuthorId: target.authorId });
         openForm = null;
         say("");
         renderDebate();
@@ -756,11 +780,131 @@ function actions(target) {
   return box;
 }
 
+// ============ マイページ（本人だけが見られる） ============
+const thesisCache = {};
+async function getThesis(rootId) {
+  if (!(rootId in thesisCache)) {
+    try {
+      const snap = await getDoc(doc(db, "posts", rootId));
+      thesisCache[rootId] = snap.exists() ? snap.data().body : "";
+    } catch (e) {
+      thesisCache[rootId] = "";
+    }
+  }
+  return thesisCache[rootId];
+}
+
+// 前回マイページを開いた時刻（この端末のブラウザにだけ保存。新着の印に使う）
+function lastVisit(uid) {
+  try { return Number(localStorage.getItem("myVisit_" + uid)) || 0; } catch (e) { return 0; }
+}
+function saveVisit(uid) {
+  try { localStorage.setItem("myVisit_" + uid, String(Date.now())); } catch (e) {}
+}
+
+let myStarted = false;
+function startMyPage(user) {
+  $("homeView").classList.add("hidden");
+  $("myView").classList.remove("hidden");
+  document.title = "マイページ｜哲学の問い";
+  if (!user) {
+    $("reactList").replaceChildren(el("li", "empty", "ログインすると、マイページが見られます。"));
+    $("myPostList").replaceChildren();
+    return;
+  }
+  if (myStarted) return;
+  myStarted = true;
+  const since = lastVisit(user.uid);
+  let myPosts = [], replies = [], agrees = [];
+  const draw = () => renderMyPage(user.uid, since, myPosts, replies, agrees);
+
+  onSnapshot(query(collection(db, "posts"), where("authorId", "==", user.uid)), (snap) => {
+    myPosts = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    draw();
+  });
+  onSnapshot(query(collection(db, "posts"), where("parentAuthorId", "==", user.uid)), (snap) => {
+    replies = snap.docs.map((d) => ({ id: d.id, ...d.data() })).filter((p) => p.authorId !== user.uid);
+    draw();
+  });
+  onSnapshot(query(collection(db, "agrees"), where("postAuthorId", "==", user.uid)), (snap) => {
+    agrees = snap.docs.map((d) => d.data());
+    draw();
+  });
+  saveVisit(user.uid);
+}
+
+async function renderMyPage(uid, since, myPosts, replies, agrees) {
+  const mine = {};
+  for (const p of myPosts) mine[p.id] = p;
+  const agreeCount = {};
+  for (const a of agrees) agreeCount[a.postId] = (agreeCount[a.postId] || 0) + 1;
+  const kindName = (p) => (p.parentId ? (STANCE[p.stance] || "投稿") : "問い");
+
+  // --- 自分への反応（コメントと一理ある、新しい順に30件） ---
+  const events = [
+    ...replies.map((p) => ({ type: "reply", time: timeOf(p), post: p })),
+    ...agrees.map((a) => ({ type: "agree", time: a.createdAt ? a.createdAt.toMillis() : Date.now(), a }))
+  ].sort((x, y) => y.time - x.time).slice(0, 30);
+
+  const reactItems = await Promise.all(events.map(async (ev) => {
+    const li = el("li");
+    const link = el("a");
+    const head = el("div", "meta");
+    if (ev.type === "reply") {
+      const p = ev.post;
+      const target = mine[p.parentId];
+      link.href = threadUrl(p.rootId);
+      head.append(el("span", "label " + p.stance, STANCE[p.stance] || ""),
+                  document.createTextNode((await getName(p.authorId)) + "　" + whenText(p)));
+      if (ev.time > since) head.append(el("span", "new-badge", "新着"));
+      link.append(head, el("div", "text", short(p.body, 80)));
+      if (target) link.append(el("div", "about", "あなたの" + kindName(target) + "「" + short(target.body, 30) + "」へ"));
+    } else {
+      const target = mine[ev.a.postId];
+      link.href = threadUrl(ev.a.rootId);
+      head.append(el("span", "mini-seal", "理"),
+                  document.createTextNode("一理ある　" + (ev.a.createdAt ? ev.a.createdAt.toDate().toLocaleString("ja-JP") : "")));
+      if (ev.time > since) head.append(el("span", "new-badge", "新着"));
+      link.append(head, el("div", "text",
+        target ? "あなたの" + kindName(target) + "「" + short(target.body, 40) + "」に、一理あると思った人がいます。"
+               : "あなたの投稿に、一理あると思った人がいます。"));
+    }
+    li.append(link);
+    return li;
+  }));
+  $("reactList").replaceChildren(...(reactItems.length ? reactItems
+    : [el("li", "empty", "まだ反応はありません。問いに答えたり、コメントを書いたりしてみましょう。")]));
+
+  // --- 自分の投稿（新しい順） ---
+  const list = [...myPosts].sort((a, b) => timeOf(b) - timeOf(a));
+  const postItems = await Promise.all(list.map(async (p) => {
+    const li = el("li");
+    const link = el("a");
+    link.href = threadUrl(p.rootId || p.id);
+    const head = el("div", "meta");
+    if (p.parentId) head.append(el("span", "label " + p.stance, STANCE[p.stance] || ""));
+    else head.append(el("span", "tag-thesis", "問い"));
+    head.append(document.createTextNode(whenText(p)));
+    if (agreeCount[p.id]) head.append(el("span", "agree-count", "一理ある " + agreeCount[p.id]));
+    link.append(head, el("div", "text", short(p.body, 80)));
+    if (p.parentId && p.rootId) {
+      const t = await getThesis(p.rootId);
+      if (t) link.append(el("div", "about", "問い：" + short(t, 40)));
+    }
+    li.append(link);
+    return li;
+  }));
+  $("myPostList").replaceChildren(...(postItems.length ? postItems
+    : [el("li", "empty", "まだ投稿がありません。")]));
+}
+
 // ============ どちらのページを表示するか ============
-// アドレスに ?q=問いのID があれば問いのページ、なければトップページ
-const threadId = new URLSearchParams(location.search).get("q");
+// ?q=問いのID → 問いのページ ／ ?me → マイページ ／ それ以外 → トップページ
+const params = new URLSearchParams(location.search);
+const threadId = params.get("q");
 if (threadId) startThread(threadId);
+else if (params.has("me")) onAuthStateChanged(auth, (user) => startMyPage(user));
 else startHome();
 </script>
 </body>
-</html>
+</html> 
