@@ -181,6 +181,22 @@
   .label.pro { color: var(--pro); }
   .label.con { color: var(--con); }
 
+  /* 盛り上がっている問い・新着 */
+  .rank, .recent { list-style: none; margin: 0; padding: 0; }
+  .rank li, .recent li { border-top: 1px solid var(--rule); cursor: pointer; }
+  .rank li:first-child, .recent li:first-child { border-top: none; }
+  .rank li { display: flex; gap: 1rem; align-items: baseline; padding: .7rem .25rem; }
+  .rank li:hover, .recent li:hover { background: #f3f5f2; }
+  .rank-no { font-family: var(--mincho); font-weight: 700; font-size: 1.5rem; color: var(--indigo); min-width: 1.4rem; text-align: right; line-height: 1; }
+  .rank-body { flex: 1; }
+  .rank-body .text { font-family: var(--mincho); font-size: 1.05rem; line-height: 1.6; }
+  .count { font-size: .8rem; color: var(--indigo); font-weight: 500; }
+  .recent li { padding: .6rem .25rem; }
+  .recent .text { font-size: .92rem; line-height: 1.6; }
+  .recent .about { font-size: .8rem; color: var(--ink-soft); }
+  .tag-thesis { display: inline-block; font-size: .72rem; color: var(--ink-soft); border: 1px solid var(--rule); border-radius: 2px; padding: 0 .35rem; margin-right: .6rem; line-height: 1.5; }
+  .empty { font-size: .9rem; color: var(--ink-soft); }
+
   @media (max-width: 520px) {
     body { padding: 0 .9rem 3rem; }
     h1 { font-size: 1.6rem; margin-top: 2rem; }
@@ -244,6 +260,14 @@
     <button id="thesisBtn">投稿</button>
   </section>
   <section>
+    <h2>この24時間で盛り上がっている問い</h2>
+    <ol id="rankList" class="rank"><li class="empty">集計中…</li></ol>
+  </section>
+  <section>
+    <h2>新着の投稿</h2>
+    <ul id="recentList" class="recent"><li class="empty">読み込み中…</li></ul>
+  </section>
+  <section>
     <h2>問いの一覧</h2>
     <label>ジャンルで絞り込む <select id="filterCategory"></select></label>
     <div id="thesisList">読み込み中…</div>
@@ -264,7 +288,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
 import {
   getFirestore, doc, setDoc, getDoc, collection,
-  query, where, onSnapshot, serverTimestamp
+  query, where, orderBy, limit, onSnapshot, serverTimestamp, Timestamp
 } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -405,6 +429,8 @@ onSnapshot(query(collection(db, "posts"), where("parentId", "==", null)), (snap)
   allTheses = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
                        .sort((a, b) => timeOf(b) - timeOf(a));
   renderList();
+  renderRanking();
+  renderRecent();
 }, () => { $("thesisList").textContent = "読み込めませんでした。"; });
 $("filterCategory").onchange = () => renderList();
 
@@ -421,6 +447,77 @@ async function renderList() {
     div.append(el("div", "text", t.body), meta);
     div.onclick = () => openDebate(t.id);
     return div;
+  }));
+  box.replaceChildren(...items);
+}
+
+// ---------- この24時間で盛り上がっている問い ----------
+// 直近24時間の投稿を読み、論拠（コメント）の数を問いごとに数える
+const DAY = 24 * 60 * 60 * 1000;
+let dayPosts = [];
+onSnapshot(query(collection(db, "posts"), where("createdAt", ">=", Timestamp.fromMillis(Date.now() - DAY))), (snap) => {
+  dayPosts = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  renderRanking();
+}, () => { $("rankList").replaceChildren(el("li", "empty", "読み込めませんでした。")); });
+setInterval(() => renderRanking(), 5 * 60 * 1000);   // 5分ごとに24時間の範囲を更新
+
+function renderRanking() {
+  const since = Date.now() - DAY;
+  const counts = {};
+  for (const p of dayPosts) {
+    if (!p.parentId || !p.rootId || timeOf(p) < since) continue;   // 問いそのものは数えない
+    counts[p.rootId] = (counts[p.rootId] || 0) + 1;
+  }
+  const top = Object.entries(counts)
+    .map(([rootId, n]) => ({ thesis: allTheses.find((t) => t.id === rootId), n }))
+    .filter((r) => r.thesis)
+    .sort((a, b) => b.n - a.n)
+    .slice(0, 5);
+  const box = $("rankList");
+  if (top.length === 0) {
+    box.replaceChildren(el("li", "empty", "この24時間の論拠はまだありません。最初の論拠を書いてみましょう。"));
+    return;
+  }
+  box.replaceChildren(...top.map((r, i) => {
+    const li = el("li");
+    const body = el("div", "rank-body");
+    const meta = el("div", "meta");
+    meta.append(el("span", "cat", catName(r.thesis.category)), el("span", "count", "論拠 " + r.n + " 件"));
+    body.append(el("div", "text", r.thesis.body), meta);
+    li.append(el("span", "rank-no", String(i + 1)), body);
+    li.onclick = () => openDebate(r.thesis.id);
+    return li;
+  }));
+}
+
+// ---------- 新着の投稿（問いと論拠の両方） ----------
+let recentPosts = [];
+onSnapshot(query(collection(db, "posts"), orderBy("createdAt", "desc"), limit(10)), (snap) => {
+  recentPosts = snap.docs.map((d) => ({ id: d.id, ...d.data() })).filter((p) => p.rootId);
+  renderRecent();
+}, () => { $("recentList").replaceChildren(el("li", "empty", "読み込めませんでした。")); });
+
+const short = (text, n) => (text.length > n ? text.slice(0, n) + "…" : text);
+
+async function renderRecent() {
+  const box = $("recentList");
+  if (recentPosts.length === 0) { box.replaceChildren(el("li", "empty", "まだ投稿がありません。")); return; }
+  const items = await Promise.all(recentPosts.map(async (p) => {
+    const li = el("li");
+    const head = el("div", "meta");
+    if (p.parentId) {
+      head.append(el("span", "label " + p.stance, p.stance === "pro" ? "賛成" : "反対"));
+    } else {
+      head.append(el("span", "tag-thesis", "新しい問い"));
+    }
+    head.append(document.createTextNode((await getName(p.authorId)) + "　" + whenText(p)));
+    li.append(head, el("div", "text", short(p.body, 80)));
+    if (p.parentId) {
+      const thesis = allTheses.find((t) => t.id === p.rootId);
+      if (thesis) li.append(el("div", "about", "問い：" + short(thesis.body, 40)));
+    }
+    li.onclick = () => openDebate(p.rootId);
+    return li;
   }));
   box.replaceChildren(...items);
 }
