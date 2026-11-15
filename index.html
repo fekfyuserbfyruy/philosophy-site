@@ -121,6 +121,7 @@
   a { color: var(--indigo); cursor: pointer; text-underline-offset: 3px; }
 
   /* 問いの一覧：問いそのものを主役に */
+  a.thesis-item, .rank a, .recent a { display: block; color: inherit; text-decoration: none; }
   .thesis-item {
     padding: 1rem .25rem 1rem .9rem;
     border-left: 3px solid transparent;
@@ -160,6 +161,11 @@
   }
   .node.pro { border-left-color: var(--pro); }
   .node.con { border-left-color: var(--con); }
+  /* 答え（立場）：問いの直下。藍色の太い線で、賛否より一段強く */
+  .node.answer { border-left: 3px solid var(--indigo); margin: 1.4rem 0 0 0; padding-left: 1.1rem; }
+  .node.answer > .text { font-size: 1.12rem; font-weight: 700; }
+  .label.answer { color: var(--indigo); }
+  .answer-btn { margin-top: .3rem; }
   /* ツリーの中の返信ボタンは目立たせない */
   .node .small { border-color: transparent; color: var(--ink-soft); font-size: .78rem; padding: .1rem .5rem; margin: 0 .2rem .2rem 0; }
   .node .small:hover { color: var(--indigo); background: #e3e7ef; }
@@ -203,15 +209,15 @@
 
   /* 盛り上がっている問い・新着 */
   .rank, .recent { list-style: none; margin: 0; padding: 0; }
-  .rank li, .recent li { border-top: 1px solid var(--rule); cursor: pointer; }
+  .rank li, .recent li { border-top: 1px solid var(--rule); }
   .rank li:first-child, .recent li:first-child { border-top: none; }
-  .rank li { display: flex; gap: 1rem; align-items: baseline; padding: .7rem .25rem; }
-  .rank li:hover, .recent li:hover { background: #f3f5f2; }
+  .rank a { display: flex; gap: 1rem; align-items: baseline; padding: .7rem .25rem; }
+  .rank a:hover, .recent a:hover { background: #f3f5f2; }
   .rank-no { font-family: var(--mincho); font-weight: 700; font-size: 1.5rem; color: var(--indigo); min-width: 1.4rem; text-align: right; line-height: 1; }
   .rank-body { flex: 1; }
   .rank-body .text { font-family: var(--mincho); font-size: 1.05rem; line-height: 1.6; }
   .count { font-size: .8rem; color: var(--indigo); font-weight: 500; }
-  .recent li { padding: .6rem .25rem; }
+  .recent a { padding: .6rem .25rem; }
   .recent .text { font-size: .92rem; line-height: 1.6; }
   .recent .about { font-size: .8rem; color: var(--ink-soft); }
   .tag-thesis { display: inline-block; font-size: .72rem; color: var(--ink-soft); border: 1px solid var(--rule); border-radius: 2px; padding: 0 .35rem; margin-right: .6rem; line-height: 1.5; }
@@ -238,7 +244,7 @@
     <summary><b>議論のルール</b>（投稿する前にお読みください）</summary>
     <ol>
       <li>相手の人格ではなく、主張に対して応答してください。否定・揶揄・人格攻撃はしないでください。</li>
-      <li>賛成・反対には、かならず理由を書いてください。</li>
+      <li>答えや、賛成・反対のコメントには、かならず理由を書いてください。</li>
       <li>1つのコメントには、1つの論点だけを書いてください。</li>
       <li>自分や他人を特定できる情報（本名・住所・所属など）は書かないでください。</li>
       <li>投稿は後から削除できません。内容をよく確かめてから投稿してください。</li>
@@ -276,7 +282,7 @@
   <section id="newThesisBox" class="hidden">
     <h2>新しい問いを立てる</h2>
     <label>ジャンル <select id="thesisCategory"></select></label>
-    <textarea id="thesisBody" maxlength="5000" placeholder="例：自由意志は存在する。"></textarea>
+    <textarea id="thesisBody" maxlength="5000" placeholder="例：自由意志は存在するのか？"></textarea>
     <button id="thesisBtn">投稿</button>
   </section>
   <section>
@@ -296,7 +302,7 @@
 
 <!-- 議論画面 -->
 <div id="debateView" class="hidden">
-  <p><a id="backLink">← 問いの一覧に戻る</a></p>
+  <p><a id="backLink" href="./">← 問いの一覧に戻る</a></p>
   <section id="debateBox">読み込み中…</section>
 </div>
 
@@ -412,7 +418,7 @@ onAuthStateChanged(auth, async (user) => {
   $("userBox").classList.toggle("hidden", !user);
   $("newThesisBox").classList.toggle("hidden", !user);
   if (user) $("me").textContent = await getName(user.uid);
-  if (currentRootId) renderDebate();   // ログイン状態で「賛成/反対」ボタンの表示が変わる
+  if (currentRootId) renderDebate();   // ログイン状態で書き込みボタンの表示が変わる
 });
 
 // ---------- 投稿の保存 ----------
@@ -424,7 +430,7 @@ async function savePost({ body, parentId, rootId, stance, category }) {
     createdAt: serverTimestamp(),
     parentId: parentId,                          // 問いなら null
     rootId: rootId || ref.id,                    // 問いなら自分自身のID
-    stance: stance,                              // "pro" / "con"、問いなら null
+    stance: stance,                              // "answer" / "pro" / "con"、問いなら null
     category: category || null                   // 問いのジャンル、コメントなら null
   });
   return ref.id;
@@ -435,24 +441,49 @@ $("thesisBtn").onclick = async () => {
   const body = $("thesisBody").value.trim();
   if (!body) return say("問いを入力してください。");
   try {
-    await savePost({ body, parentId: null, rootId: null, stance: null, category: $("thesisCategory").value });
-    $("thesisBody").value = "";
-    say("");
+    const id = await savePost({ body, parentId: null, rootId: null, stance: null, category: $("thesisCategory").value });
+    location.href = "?q=" + encodeURIComponent(id);   // 立てた問いのページへ移動
   } catch (e) {
     say("投稿できませんでした。");
   }
 };
 
-// ---------- 一覧画面 ----------
+// 投稿の種類：答え（問いへの立場）／賛成／反対
+const STANCE = { answer: "答え", pro: "賛成", con: "反対" };
+const ORDER = { answer: 0, pro: 1, con: 2 };
+const threadUrl = (id) => "?q=" + encodeURIComponent(id);   // 問いのページのアドレス
+const short = (text, n) => (text.length > n ? text.slice(0, n) + "…" : text);
+
+// ============ トップページ ============
 let allTheses = [];
-onSnapshot(query(collection(db, "posts"), where("parentId", "==", null)), (snap) => {
-  allTheses = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
-                       .sort((a, b) => timeOf(b) - timeOf(a));
-  renderList();
-  renderRanking();
-  renderRecent();
-}, () => { $("thesisList").textContent = "読み込めませんでした。"; });
-$("filterCategory").onchange = () => renderList();
+let dayPosts = [];
+let recentPosts = [];
+const DAY = 24 * 60 * 60 * 1000;
+
+function startHome() {
+  // 問いの一覧
+  onSnapshot(query(collection(db, "posts"), where("parentId", "==", null)), (snap) => {
+    allTheses = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+                         .sort((a, b) => timeOf(b) - timeOf(a));
+    renderList();
+    renderRanking();
+    renderRecent();
+  }, () => { $("thesisList").textContent = "読み込めませんでした。"; });
+  $("filterCategory").onchange = () => renderList();
+
+  // この24時間の書き込み（ランキング用）
+  onSnapshot(query(collection(db, "posts"), where("createdAt", ">=", Timestamp.fromMillis(Date.now() - DAY))), (snap) => {
+    dayPosts = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    renderRanking();
+  }, () => { $("rankList").replaceChildren(el("li", "empty", "読み込めませんでした。")); });
+  setInterval(() => renderRanking(), 5 * 60 * 1000);   // 5分ごとに24時間の範囲を更新
+
+  // 新着10件
+  onSnapshot(query(collection(db, "posts"), orderBy("createdAt", "desc"), limit(10)), (snap) => {
+    recentPosts = snap.docs.map((d) => ({ id: d.id, ...d.data() })).filter((p) => p.rootId);
+    renderRecent();
+  }, () => { $("recentList").replaceChildren(el("li", "empty", "読み込めませんでした。")); });
+}
 
 async function renderList() {
   const box = $("thesisList");
@@ -460,27 +491,18 @@ async function renderList() {
   const theses = filter ? allTheses.filter((t) => t.category === filter) : allTheses;
   if (theses.length === 0) { box.textContent = "まだ問いがありません。"; return; }
   const items = await Promise.all(theses.map(async (t) => {
-    const div = el("div", "thesis-item");
+    const a = el("a", "thesis-item");
+    a.href = threadUrl(t.id);
     const meta = el("div", "meta");
     meta.append(el("span", "cat", catName(t.category)),
                 document.createTextNode((await getName(t.authorId)) + "　" + whenText(t)));
-    div.append(el("div", "text", t.body), meta);
-    div.onclick = () => openDebate(t.id);
-    return div;
+    a.append(el("div", "text", t.body), meta);
+    return a;
   }));
   box.replaceChildren(...items);
 }
 
-// ---------- この24時間で盛り上がっている問い ----------
-// 直近24時間の投稿を読み、コメントの数を問いごとに数える
-const DAY = 24 * 60 * 60 * 1000;
-let dayPosts = [];
-onSnapshot(query(collection(db, "posts"), where("createdAt", ">=", Timestamp.fromMillis(Date.now() - DAY))), (snap) => {
-  dayPosts = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-  renderRanking();
-}, () => { $("rankList").replaceChildren(el("li", "empty", "読み込めませんでした。")); });
-setInterval(() => renderRanking(), 5 * 60 * 1000);   // 5分ごとに24時間の範囲を更新
-
+// この24時間で盛り上がっている問い（答え・コメントの数）
 function renderRanking() {
   const since = Date.now() - DAY;
   const counts = {};
@@ -495,77 +517,68 @@ function renderRanking() {
     .slice(0, 5);
   const box = $("rankList");
   if (top.length === 0) {
-    box.replaceChildren(el("li", "empty", "この24時間のコメントはまだありません。最初のコメントを書いてみましょう。"));
+    box.replaceChildren(el("li", "empty", "この24時間の書き込みはまだありません。気になる問いに答えてみましょう。"));
     return;
   }
   box.replaceChildren(...top.map((r, i) => {
     const li = el("li");
+    const a = el("a");
+    a.href = threadUrl(r.thesis.id);
     const body = el("div", "rank-body");
     const meta = el("div", "meta");
-    meta.append(el("span", "cat", catName(r.thesis.category)), el("span", "count", "コメント " + r.n + " 件"));
+    meta.append(el("span", "cat", catName(r.thesis.category)), el("span", "count", "書き込み " + r.n + " 件"));
     body.append(el("div", "text", r.thesis.body), meta);
-    li.append(el("span", "rank-no", String(i + 1)), body);
-    li.onclick = () => openDebate(r.thesis.id);
+    a.append(el("span", "rank-no", String(i + 1)), body);
+    li.append(a);
     return li;
   }));
 }
 
-// ---------- 新着の投稿（問いとコメントの両方） ----------
-let recentPosts = [];
-onSnapshot(query(collection(db, "posts"), orderBy("createdAt", "desc"), limit(10)), (snap) => {
-  recentPosts = snap.docs.map((d) => ({ id: d.id, ...d.data() })).filter((p) => p.rootId);
-  renderRecent();
-}, () => { $("recentList").replaceChildren(el("li", "empty", "読み込めませんでした。")); });
-
-const short = (text, n) => (text.length > n ? text.slice(0, n) + "…" : text);
-
+// 新着の投稿（問い・答え・コメント）
 async function renderRecent() {
   const box = $("recentList");
   if (recentPosts.length === 0) { box.replaceChildren(el("li", "empty", "まだ投稿がありません。")); return; }
   const items = await Promise.all(recentPosts.map(async (p) => {
     const li = el("li");
+    const a = el("a");
+    a.href = threadUrl(p.rootId);
     const head = el("div", "meta");
     if (p.parentId) {
-      head.append(el("span", "label " + p.stance, p.stance === "pro" ? "賛成" : "反対"));
+      head.append(el("span", "label " + p.stance, STANCE[p.stance] || ""));
     } else {
       head.append(el("span", "tag-thesis", "新しい問い"));
     }
     head.append(document.createTextNode((await getName(p.authorId)) + "　" + whenText(p)));
-    li.append(head, el("div", "text", short(p.body, 80)));
+    a.append(head, el("div", "text", short(p.body, 80)));
     if (p.parentId) {
       const thesis = allTheses.find((t) => t.id === p.rootId);
-      if (thesis) li.append(el("div", "about", "問い：" + short(thesis.body, 40)));
+      if (thesis) a.append(el("div", "about", "問い：" + short(thesis.body, 40)));
     }
-    li.onclick = () => openDebate(p.rootId);
+    li.append(a);
     return li;
   }));
   box.replaceChildren(...items);
 }
 
-// ---------- 議論画面 ----------
+// ============ 問いのページ ============
 let currentRootId = null;
-let unsubscribe = null;
-let unsubscribeAgrees = null;
-let agreeMap = {};              // コメントID → 押した人のIDの一覧
-let nodes = [];                 // この議論のすべての投稿
+let agreeMap = {};              // 投稿ID → 「一理ある」を押した人のIDの一覧
+let nodes = [];                 // この問いのすべての投稿
 let openForm = null;            // 開いている書き込み欄 { parentId, stance, text }
 
-function openDebate(rootId) {
+function startThread(rootId) {
   currentRootId = rootId;
-  openForm = null;
-  nodes = [];
   $("homeView").classList.add("hidden");
   $("debateView").classList.remove("hidden");
-  $("debateBox").textContent = "読み込み中…";
-  if (unsubscribe) unsubscribe();
-  unsubscribe = onSnapshot(query(collection(db, "posts"), where("rootId", "==", rootId)), (snap) => {
+  onSnapshot(query(collection(db, "posts"), where("rootId", "==", rootId)), (snap) => {
     nodes = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    if (!nodes.find((n) => n.id === rootId)) {
+      $("debateBox").textContent = "この問いは見つかりませんでした。";
+      return;
+    }
     renderDebate();
   }, () => { $("debateBox").textContent = "読み込めませんでした。"; });
-  // この議論の「一理ある」をまとめて読み、コメントごとに数える
-  agreeMap = {};
-  if (unsubscribeAgrees) unsubscribeAgrees();
-  unsubscribeAgrees = onSnapshot(query(collection(db, "agrees"), where("rootId", "==", rootId)), (snap) => {
+  onSnapshot(query(collection(db, "agrees"), where("rootId", "==", rootId)), (snap) => {
     agreeMap = {};
     for (const d of snap.docs) {
       const a = d.data();
@@ -573,50 +586,42 @@ function openDebate(rootId) {
     }
     renderDebate();
   });
-  window.scrollTo(0, 0);
 }
-
-$("backLink").onclick = () => {
-  if (unsubscribe) unsubscribe();
-  if (unsubscribeAgrees) unsubscribeAgrees();
-  unsubscribe = null;
-  unsubscribeAgrees = null;
-  currentRootId = null;
-  $("debateView").classList.add("hidden");
-  $("homeView").classList.remove("hidden");
-};
 
 async function renderDebate() {
   const root = nodes.find((n) => n.id === currentRootId);
   if (!root) return;
-  // 親ごとに子をまとめる（賛成→反対、それぞれ古い順）
+  document.title = short(root.body, 30) + "｜哲学の問い";
+  // 親ごとに子をまとめる（答え→賛成→反対、それぞれ古い順）
   const children = {};
   for (const n of nodes) {
     if (!n.parentId) continue;
     (children[n.parentId] = children[n.parentId] || []).push(n);
   }
   for (const list of Object.values(children)) {
-    list.sort((a, b) => (a.stance === b.stance ? timeOf(a) - timeOf(b) : a.stance === "pro" ? -1 : 1));
+    list.sort((a, b) => (ORDER[a.stance] - ORDER[b.stance]) || (timeOf(a) - timeOf(b)));
   }
   await Promise.all(nodes.map((n) => getName(n.authorId)));   // 仮名を先に読み込む
 
-  const box = $("debateBox");
   const top = el("div");
   const rootMeta = el("div", "meta");
   rootMeta.append(el("span", "cat", catName(root.category)),
                   document.createTextNode(nameCache[root.authorId] + "　" + whenText(root)));
-  top.append(el("div", "thesis text", root.body), rootMeta);
-  top.append(actions(root), childList(root.id, children));
-  box.replaceChildren(top);
+  top.append(el("div", "thesis text", root.body), rootMeta, actions(root));
+  if (!children[root.id]) {
+    top.append(el("p", "empty", "まだ答えがありません。あなたの考える答えを書いてみましょう。"));
+  }
+  top.append(childList(root.id, children));
+  $("debateBox").replaceChildren(top);
 }
 
-// ある投稿の下にぶら下がる賛成・反対のツリー
+// ある投稿の下にぶら下がるツリー
 function childList(parentId, children) {
   const wrap = el("div");
   for (const n of children[parentId] || []) {
     const node = el("div", "node " + n.stance);
     const head = el("div", "meta");
-    head.append(el("span", "label " + n.stance, n.stance === "pro" ? "賛成" : "反対"),
+    head.append(el("span", "label " + n.stance, STANCE[n.stance] || ""),
                 document.createTextNode(nameCache[n.authorId] + "　" + whenText(n)));
     node.append(head, el("div", "text", n.body), actions(n), childList(n.id, children));
     wrap.append(node);
@@ -624,7 +629,7 @@ function childList(parentId, children) {
   return wrap;
 }
 
-// 「一理ある」ボタン（コメントにだけ付ける。自分のコメントには押せない）
+// 「一理ある」ボタン（答えとコメントに付ける。自分の投稿には押せない）
 let lastStamped = null;
 function agreeButton(target) {
   const me = auth.currentUser;
@@ -640,9 +645,8 @@ function agreeButton(target) {
     b.querySelector(".seal").style.animation = "none";
   }
   if (!me || target.authorId === me.uid) {
-    b.disabled = true;               // ログインしていない、または自分のコメント
-    if (!me) b.title = "ログインすると押せます";
-    else b.title = "自分のコメントには押せません";
+    b.disabled = true;               // ログインしていない、または自分の投稿
+    b.title = me ? "自分の投稿には押せません" : "ログインすると押せます";
     return b;
   }
   b.onclick = async () => {
@@ -663,20 +667,32 @@ function agreeButton(target) {
   return b;
 }
 
-// 「賛成する／反対する」ボタンと書き込み欄
+// 書き込みボタンと書き込み欄
+//   問い → 「答えを書く」
+//   答え・コメント → 「一理ある」「賛成のコメントを書く」「反対のコメントを書く」
 function actions(target) {
   const box = el("div");
-  if (target.parentId) box.append(agreeButton(target));
-  if (!auth.currentUser) return box;
-  for (const stance of ["pro", "con"]) {
-    const b = el("button", "small", stance === "pro" ? "賛成のコメントを書く" : "反対のコメントを書く");
+  const isThesis = !target.parentId;
+  if (!isThesis) box.append(agreeButton(target));
+  if (!auth.currentUser) {
+    if (isThesis) box.append(el("p", "meta", "ログインすると、答えやコメントを書けます。"));
+    return box;
+  }
+  const kinds = isThesis ? ["answer"] : ["pro", "con"];
+  for (const stance of kinds) {
+    const label = stance === "answer" ? "答えを書く" : STANCE[stance] + "のコメントを書く";
+    const b = el("button", stance === "answer" ? "answer-btn" : "small", label);
     b.onclick = () => { openForm = { parentId: target.id, stance, text: "" }; renderDebate(); };
     box.append(b);
   }
   if (openForm && openForm.parentId === target.id) {
     const ta = el("textarea");
     ta.maxLength = 5000;
-    ta.placeholder = openForm.stance === "pro" ? "賛成の理由を書いてください" : "反対の理由を書いてください";
+    ta.placeholder = {
+      answer: "あなたの答え（立場）と、そう考える理由を書いてください",
+      pro: "賛成の理由を書いてください",
+      con: "反対の理由を書いてください"
+    }[openForm.stance];
     ta.value = openForm.text;
     ta.oninput = () => { openForm.text = ta.value; };
     const send = el("button", "small", "投稿");
@@ -694,11 +710,17 @@ function actions(target) {
     };
     const cancel = el("button", "small", "やめる");
     cancel.onclick = () => { openForm = null; renderDebate(); };
-    box.append(el("div", "meta", openForm.stance === "pro" ? "賛成のコメント" : "反対のコメント"), ta, send, cancel);
+    box.append(el("div", "meta", openForm.stance === "answer" ? "あなたの答え" : STANCE[openForm.stance] + "のコメント"), ta, send, cancel);
     setTimeout(() => ta.focus(), 0);
   }
   return box;
 }
+
+// ============ どちらのページを表示するか ============
+// アドレスに ?q=問いのID があれば問いのページ、なければトップページ
+const threadId = new URLSearchParams(location.search).get("q");
+if (threadId) startThread(threadId);
+else startHome();
 </script>
 </body>
 </html>
