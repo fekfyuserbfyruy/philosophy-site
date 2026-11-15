@@ -5,30 +5,191 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>哲学の問い（試作版）</title>
 <style>
-  body { font-family: sans-serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; line-height: 1.7; color: #222; }
-  h1 { font-size: 1.4rem; }
-  h2 { font-size: 1.1rem; }
-  section { border: 1px solid #ddd; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }
-  input, textarea { width: 100%; box-sizing: border-box; padding: .5rem; margin: .25rem 0 .5rem; font-size: 1rem; }
-  textarea { min-height: 5rem; }
-  button { padding: .4rem .9rem; font-size: .95rem; margin: 0 .4rem .4rem 0; cursor: pointer; }
-  .meta { font-size: .85rem; color: #666; }
+  @import url('https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap');
+
+  /* 色：インクと紙。賛成は緑青、反対は臙脂 */
+  :root {
+    --ink: #1f2430;
+    --ink-soft: #5b6170;
+    --paper: #eef0ec;
+    --sheet: #fbfbf9;
+    --rule: #cfd3cc;
+    --indigo: #34466e;
+    --pro: #2f6f5e;
+    --con: #9c3d54;
+    --mincho: "Shippori Mincho", "Yu Mincho", "Hiragino Mincho ProN", serif;
+    --gothic: "Zen Kaku Gothic New", "Hiragino Sans", "Yu Gothic", sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--gothic);
+    font-size: 16px;
+    line-height: 1.8;
+    padding: 0 1.25rem 4rem;
+  }
+  body > * { max-width: 680px; margin-left: auto; margin-right: auto; }
+
+  /* 見出し：問いの重さを明朝で */
+  h1 {
+    font-family: var(--mincho);
+    font-weight: 700;
+    font-size: 2.1rem;
+    letter-spacing: .08em;
+    line-height: 1.3;
+    margin-top: 3rem;
+    margin-bottom: .25rem;
+  }
+  h2 {
+    font-family: var(--mincho);
+    font-weight: 700;
+    font-size: 1.15rem;
+    letter-spacing: .04em;
+    margin: 0 0 .75rem;
+  }
+  #msg { color: var(--con); min-height: 1.6em; font-size: .9rem; margin: 0 auto .5rem; }
+
+  section {
+    background: var(--sheet);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 1.25rem 1.4rem;
+    margin-bottom: 1.25rem;
+  }
+  /* 折りたたみ（ルール・個人情報）は控えめに */
+  section:has(> details) { background: transparent; border: none; padding: 0; }
+  details { border-top: 1px solid var(--rule); padding: .5rem 0; }
+  details:last-child { border-bottom: 1px solid var(--rule); }
+  summary { cursor: pointer; font-size: .92rem; color: var(--ink-soft); }
+  summary b { color: var(--ink); font-weight: 500; }
+  details[open] summary { margin-bottom: .5rem; }
+  details p, details li { font-size: .9rem; color: var(--ink-soft); margin: .3rem 0; }
+
+  /* 入力 */
+  label { display: block; font-size: .85rem; color: var(--ink-soft); }
+  input, textarea, select {
+    width: 100%;
+    font: inherit;
+    font-size: 1rem;
+    color: var(--ink);
+    background: #fff;
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    padding: .6rem .75rem;
+    margin: .3rem 0 .9rem;
+  }
+  select { width: auto; min-width: 14rem; }
+  textarea { min-height: 6rem; resize: vertical; font-family: var(--mincho); font-size: 1.05rem; line-height: 1.9; }
+  input:focus, textarea:focus, select:focus, button:focus-visible, summary:focus-visible, .thesis-item:focus-visible, a:focus-visible {
+    outline: 2px solid var(--indigo);
+    outline-offset: 2px;
+  }
+
+  /* ボタン：主な操作は藍色、補助は線のみ */
+  button {
+    font: inherit;
+    font-size: .92rem;
+    font-weight: 500;
+    color: #fff;
+    background: var(--indigo);
+    border: 1px solid var(--indigo);
+    border-radius: 6px;
+    padding: .5rem 1.1rem;
+    margin: 0 .5rem .5rem 0;
+    cursor: pointer;
+  }
+  button:hover { background: #2a3858; }
+  #resetBtn, #logoutBtn, .small {
+    background: transparent;
+    color: var(--indigo);
+  }
+  #resetBtn { border-color: transparent; text-decoration: underline; text-underline-offset: 3px; padding-left: .3rem; padding-right: .3rem; }
+  #resetBtn:hover, #logoutBtn:hover, .small:hover { background: #e3e7ef; }
+  .small { font-size: .82rem; padding: .25rem .75rem; border-color: var(--rule); }
+
+  #userBox { display: flex; align-items: center; gap: .35rem; padding: .6rem 1.4rem; font-size: .9rem; color: var(--ink-soft); }
+  #userBox.hidden { display: none; }
+  #userBox button { margin: 0 0 0 auto; }
+  #me { font-family: var(--mincho); font-size: 1.05rem; }
+
+  .meta { font-size: .8rem; color: var(--ink-soft); }
   .text { white-space: pre-wrap; }
-  #msg { color: #b00; min-height: 1.5em; }
   .hidden { display: none; }
-  .thesis-item { border-top: 1px solid #eee; padding: .6rem 0; cursor: pointer; }
-  .thesis-item:hover { background: #fafafa; }
-  .thesis { font-size: 1.15rem; font-weight: bold; }
-  .node { margin: .6rem 0 0 .8rem; padding: .4rem .6rem; border-left: 4px solid #ccc; }
-  .node.pro { border-left-color: #2e8b57; }
-  .node.con { border-left-color: #c0392b; }
-  .label { font-size: .8rem; font-weight: bold; padding: 0 .4rem; border-radius: 4px; color: #fff; margin-right: .4rem; }
-  .label.pro { background: #2e8b57; }
-  .label.con { background: #c0392b; }
-  .small { font-size: .85rem; padding: .2rem .6rem; }
-  a { color: #1a5fb4; cursor: pointer; }
-  select { padding: .4rem; font-size: 1rem; margin: .25rem 0 .5rem; }
-  .cat { display: inline-block; font-size: .8rem; padding: 0 .5rem; border-radius: 10px; background: #eef2f7; color: #345; margin-right: .4rem; }
+  a { color: var(--indigo); cursor: pointer; text-underline-offset: 3px; }
+
+  /* 問いの一覧：問いそのものを主役に */
+  .thesis-item {
+    padding: 1rem .25rem 1rem .9rem;
+    border-left: 3px solid transparent;
+    border-top: 1px solid var(--rule);
+    cursor: pointer;
+  }
+  .thesis-item:first-child { border-top: none; }
+  .thesis-item:hover { border-left-color: var(--indigo); background: #f3f5f2; }
+  .thesis-item .text { font-family: var(--mincho); font-size: 1.15rem; line-height: 1.7; margin-bottom: .2rem; }
+
+  .cat {
+    display: inline-block;
+    font-size: .75rem;
+    color: var(--indigo);
+    border-bottom: 1px solid currentColor;
+    margin-right: .6rem;
+    line-height: 1.4;
+  }
+
+  /* 議論画面 */
+  #backLink { font-size: .9rem; }
+  .thesis {
+    font-family: var(--mincho);
+    font-weight: 700;
+    font-size: 1.6rem;
+    line-height: 1.6;
+    letter-spacing: .03em;
+    margin-bottom: .4rem;
+  }
+  #debateBox > div > .meta { margin-bottom: 1rem; }
+
+  /* 論拠のツリー：賛否の色の線が議論の筋道になる */
+  .node {
+    margin: .9rem 0 0 .4rem;
+    padding: .1rem 0 .2rem 1rem;
+    border-left: 2px solid var(--rule);
+  }
+  .node.pro { border-left-color: var(--pro); }
+  .node.con { border-left-color: var(--con); }
+  /* ツリーの中の返信ボタンは目立たせない */
+  .node .small { border-color: transparent; color: var(--ink-soft); font-size: .78rem; padding: .1rem .5rem; margin: 0 .2rem .2rem 0; }
+  .node .small:hover { color: var(--indigo); background: #e3e7ef; }
+  .node > .text { font-family: var(--mincho); font-size: 1.02rem; line-height: 1.9; margin: .2rem 0 .4rem; }
+
+  /* 賛・反の印（はんこ風） */
+  .label {
+    display: inline-block;
+    font-family: var(--mincho);
+    font-weight: 700;
+    font-size: .78rem;
+    letter-spacing: .15em;
+    padding: 0 .3rem 0 .45rem;
+    border: 1.5px solid currentColor;
+    border-radius: 2px;
+    margin-right: .6rem;
+    line-height: 1.5;
+  }
+  .label.pro { color: var(--pro); }
+  .label.con { color: var(--con); }
+
+  @media (max-width: 520px) {
+    body { padding: 0 .9rem 3rem; }
+    h1 { font-size: 1.6rem; margin-top: 2rem; }
+    .thesis { font-size: 1.3rem; }
+    section { padding: 1rem; }
+    .node { margin-left: 0; padding-left: .75rem; }
+    select { min-width: 0; width: 100%; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
 <body>
