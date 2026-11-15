@@ -238,6 +238,19 @@
   .mini-seal { display: inline-flex; align-items: center; justify-content: center; width: 1.2rem; height: 1.2rem; border-radius: 50%; background: var(--indigo); color: #fff; font-family: var(--mincho); font-weight: 700; font-size: .68rem; margin-right: .5rem; }
   .agree-count { color: var(--indigo); font-weight: 500; margin-left: .6rem; }
 
+  /* 並び替え・編集・通報 */
+  .sort-row { display: flex; align-items: center; gap: .4rem; margin: 1.2rem 0 0; font-size: .8rem; color: var(--ink-soft); }
+  .sort-row button { margin: 0; }
+  .sort-row button.active { background: var(--indigo); border-color: var(--indigo); color: #fff; }
+  .edited { margin-left: .4rem; }
+  .report-btn { background: transparent; border: none; color: #8a8f99; font-size: .75rem; padding: .1rem .4rem; margin: 0 0 .2rem auto; }
+  .report-btn:hover { background: transparent; color: var(--con); text-decoration: underline; }
+  .report-btn.confirm { color: #fff; background: var(--con); border-radius: 4px; text-decoration: none; }
+  .report-btn[disabled] { cursor: default; text-decoration: none; color: #8a8f99; background: transparent; }
+  .act-row { display: flex; flex-wrap: wrap; align-items: center; }
+  .folded { font-size: .85rem; color: var(--ink-soft); background: #eceee9; border-radius: 4px; padding: .4rem .7rem; margin: .3rem 0 .4rem; }
+  .folded button { margin: 0 0 0 .5rem; }
+
   /* 閲覧履歴 */
   #historyBox h2 { display: flex; align-items: baseline; gap: .8rem; }
   #historyBox h2 .note { font-family: var(--gothic); font-weight: 400; font-size: .75rem; letter-spacing: 0; color: var(--ink-soft); }
@@ -287,8 +300,8 @@
       <li>答えや、賛成・反対のコメントには、かならず理由を書いてください。</li>
       <li>1つのコメントには、1つの論点だけを書いてください。</li>
       <li>自分や他人を特定できる情報（本名・住所・所属など）は書かないでください。</li>
-      <li>投稿は後から削除できません。内容をよく確かめてから投稿してください。</li>
-      <li>ルールに反する投稿は、運営者が予告なく削除することがあります。</li>
+      <li>投稿は後から削除できません。直せるのは投稿から15分以内だけです。内容をよく確かめてから投稿してください。</li>
+      <li>ルールに反する投稿は「通報」してください。通報が3件たまった投稿は折りたたまれ、運営者が予告なく削除することがあります。</li>
     </ol>
   </details>
   <details>
@@ -382,7 +395,7 @@ import {
   deleteUser, EmailAuthProvider, reauthenticateWithCredential
 } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
 import {
-  getFirestore, doc, setDoc, getDoc, deleteDoc, collection,
+  getFirestore, doc, setDoc, getDoc, deleteDoc, updateDoc, collection, writeBatch, increment,
   query, where, orderBy, limit, onSnapshot, serverTimestamp, Timestamp
 } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
 
@@ -523,6 +536,11 @@ const STANCE = { answer: "答え", pro: "賛成", con: "反対" };
 const ORDER = { answer: 0, pro: 1, con: 2 };
 const threadUrl = (id) => "?q=" + encodeURIComponent(id);   // 問いのページのアドレス
 const short = (text, n) => (text.length > n ? text.slice(0, n) + "…" : text);
+const HIDE_AT = 3;                                           // 通報がこの数に達したら折りたたむ
+const isHidden = (p) => (p.reportCount || 0) >= HIDE_AT;
+const bodyOf = (p) => (isHidden(p) ? "（通報が多いため折りたたまれています）" : p.body);
+const EDIT_MIN = 15;                                          // 投稿してから編集できる時間（分）
+const editLeft = (p) => (p.createdAt ? Math.ceil((p.createdAt.toMillis() + EDIT_MIN * 60000 - Date.now()) / 60000) : 0);
 
 // ============ トップページ ============
 let allTheses = [];
@@ -567,7 +585,7 @@ async function renderList() {
     const meta = el("div", "meta");
     meta.append(el("span", "cat", catName(t.category)),
                 document.createTextNode((await getName(t.authorId)) + "　" + whenText(t)));
-    a.append(el("div", "text", t.body), meta);
+    a.append(el("div", "text", bodyOf(t)), meta);
     return a;
   }));
   box.replaceChildren(...items);
@@ -598,7 +616,7 @@ function renderRanking() {
     const body = el("div", "rank-body");
     const meta = el("div", "meta");
     meta.append(el("span", "cat", catName(r.thesis.category)), el("span", "count", "書き込み " + r.n + " 件"));
-    body.append(el("div", "text", r.thesis.body), meta);
+    body.append(el("div", "text", bodyOf(r.thesis)), meta);
     a.append(el("span", "rank-no", String(i + 1)), body);
     li.append(a);
     return li;
@@ -620,10 +638,10 @@ async function renderRecent() {
       head.append(el("span", "tag-thesis", "新しい問い"));
     }
     head.append(document.createTextNode((await getName(p.authorId)) + "　" + whenText(p)));
-    a.append(head, el("div", "text", short(p.body, 80)));
+    a.append(head, el("div", "text", short(bodyOf(p), 80)));
     if (p.parentId) {
       const thesis = allTheses.find((t) => t.id === p.rootId);
-      if (thesis) a.append(el("div", "about", "問い：" + short(thesis.body, 40)));
+      if (thesis) a.append(el("div", "about", "問い：" + short(bodyOf(thesis), 40)));
     }
     li.append(a);
     return li;
@@ -668,7 +686,10 @@ $("clearHistory").onclick = () => {
 let currentRootId = null;
 let agreeMap = {};              // 投稿ID → 「一理ある」を押した人のIDの一覧
 let nodes = [];                 // この問いのすべての投稿
-let openForm = null;            // 開いている書き込み欄 { parentId, stance, text }
+let openForm = null;            // 開いている書き込み欄 新規 { parentId, stance, text } ／ 編集 { editId, text }
+let sortMode = "old";           // 並び順 "old"（古い順）／ "agree"（一理ある順）
+const shown = new Set();        // 折りたたみを開いた投稿
+const agreeCountOf = (id) => (agreeMap[id] || []).length;
 
 function startThread(rootId) {
   currentRootId = rootId;
@@ -706,7 +727,9 @@ async function renderDebate() {
     (children[n.parentId] = children[n.parentId] || []).push(n);
   }
   for (const list of Object.values(children)) {
-    list.sort((a, b) => (ORDER[a.stance] - ORDER[b.stance]) || (timeOf(a) - timeOf(b)));
+    list.sort((a, b) => (ORDER[a.stance] - ORDER[b.stance])
+      || (sortMode === "agree" ? agreeCountOf(b.id) - agreeCountOf(a.id) : 0)
+      || (timeOf(a) - timeOf(b)));
   }
   await Promise.all(nodes.map((n) => getName(n.authorId)));   // 仮名を先に読み込む
 
@@ -714,12 +737,37 @@ async function renderDebate() {
   const rootMeta = el("div", "meta");
   rootMeta.append(el("span", "cat", catName(root.category)),
                   document.createTextNode(nameCache[root.authorId] + "　" + whenText(root)));
-  top.append(el("div", "thesis text", root.body), rootMeta, shareRow(root), actions(root));
+  if (root.updatedAt) rootMeta.append(el("span", "edited", "（編集済み）"));
+  top.append(bodyBox(root, "thesis text"), rootMeta, shareRow(root), actions(root));
   if (!children[root.id]) {
     top.append(el("p", "empty", "まだ答えがありません。あなたの考える答えを書いてみましょう。"));
+  } else {
+    top.append(sortRow());
   }
   top.append(childList(root.id, children));
   $("debateBox").replaceChildren(top);
+}
+
+// 並び順の切り替え（答え同士、賛成同士、反対同士の中で並べ替える）
+function sortRow() {
+  const row = el("div", "sort-row");
+  row.append(el("span", "", "並び順："));
+  for (const [mode, label] of [["old", "古い順"], ["agree", "一理ある順"]]) {
+    const b = el("button", "small" + (sortMode === mode ? " active" : ""), label);
+    b.onclick = () => { sortMode = mode; renderDebate(); };
+    row.append(b);
+  }
+  return row;
+}
+
+// 本文（通報で折りたたまれている場合は「表示する」ボタン付き）
+function bodyBox(p, cls) {
+  if (!isHidden(p) || shown.has(p.id)) return el("div", cls, p.body);
+  const box = el("div", "folded", "この投稿は通報が多いため折りたたまれています。");
+  const b = el("button", "small", "表示する");
+  b.onclick = () => { shown.add(p.id); renderDebate(); };
+  box.append(b);
+  return box;
 }
 
 // SNSで共有するボタン（X・LINE・リンクをコピー）
@@ -755,7 +803,8 @@ function childList(parentId, children) {
     const head = el("div", "meta");
     head.append(el("span", "label " + n.stance, STANCE[n.stance] || ""),
                 document.createTextNode(nameCache[n.authorId] + "　" + whenText(n)));
-    node.append(head, el("div", "text", n.body), actions(n), childList(n.id, children));
+    if (n.updatedAt) head.append(el("span", "edited", "（編集済み）"));
+    node.append(head, bodyBox(n, "text"), actions(n), childList(n.id, children));
     wrap.append(node);
   }
   return wrap;
@@ -799,14 +848,56 @@ function agreeButton(target) {
   return b;
 }
 
+// 通報（この端末で通報した投稿を覚えておく）
+function reportedSet() {
+  try { return new Set(JSON.parse(localStorage.getItem("reported")) || []); } catch (e) { return new Set(); }
+}
+function rememberReported(id) {
+  try { const s = reportedSet(); s.add(id); localStorage.setItem("reported", JSON.stringify([...s])); } catch (e) {}
+}
+function reportButton(target) {
+  const me = auth.currentUser;
+  if (reportedSet().has(target.id)) {
+    const done = el("button", "report-btn", "通報済み");
+    done.disabled = true;
+    return done;
+  }
+  const b = el("button", "report-btn", "通報");
+  b.title = "議論のルールに反する投稿を運営者に知らせます";
+  b.onclick = async () => {
+    if (!b.classList.contains("confirm")) {          // 1回目のクリックは確認
+      b.classList.add("confirm");
+      b.textContent = "ルール違反として通報する";
+      setTimeout(() => { if (b.isConnected) { b.classList.remove("confirm"); b.textContent = "通報"; } }, 5000);
+      return;
+    }
+    const batch = writeBatch(db);                     // 通報の記録と通報数の加算を同時に行う
+    batch.set(doc(db, "reports", target.id + "_" + me.uid), { postId: target.id, uid: me.uid, createdAt: serverTimestamp() });
+    batch.update(doc(db, "posts", target.id), { reportCount: increment(1) });
+    try {
+      await batch.commit();
+      say("通報しました。ご協力ありがとうございます。");
+    } catch (e) {
+      say("この投稿はすでに通報済みです。");
+    }
+    rememberReported(target.id);
+    renderDebate();
+  };
+  return b;
+}
+
 // 書き込みボタンと書き込み欄
 //   問い → 「答えを書く」
 //   答え・コメント → 「一理ある」「賛成のコメントを書く」「反対のコメントを書く」
+//   自分の投稿（15分以内）→ 「編集」 ／ 他人の投稿 → 「通報」
 function actions(target) {
   const box = el("div");
+  const row = el("div", "act-row");
+  box.append(row);
+  const me = auth.currentUser;
   const isThesis = !target.parentId;
-  if (!isThesis) box.append(agreeButton(target));
-  if (!auth.currentUser) {
+  if (!isThesis) row.append(agreeButton(target));
+  if (!me) {
     if (isThesis) box.append(el("p", "meta", "ログインすると、答えやコメントを書けます。"));
     return box;
   }
@@ -815,8 +906,17 @@ function actions(target) {
     const label = stance === "answer" ? "答えを書く" : STANCE[stance] + "のコメントを書く";
     const b = el("button", stance === "answer" ? "answer-btn" : "small", label);
     b.onclick = () => { openForm = { parentId: target.id, stance, text: "" }; renderDebate(); };
-    box.append(b);
+    row.append(b);
   }
+  const left = editLeft(target);
+  if (target.authorId === me.uid && left > 0) {
+    const e = el("button", "small", "編集（あと" + left + "分）");
+    e.onclick = () => { openForm = { editId: target.id, text: target.body }; renderDebate(); };
+    row.append(e);
+  }
+  if (target.authorId !== me.uid) row.append(reportButton(target));
+
+  // 書き込み欄（新規）
   if (openForm && openForm.parentId === target.id) {
     const ta = el("textarea");
     ta.maxLength = 5000;
@@ -843,6 +943,31 @@ function actions(target) {
     const cancel = el("button", "small", "やめる");
     cancel.onclick = () => { openForm = null; renderDebate(); };
     box.append(el("div", "meta", openForm.stance === "answer" ? "あなたの答え" : STANCE[openForm.stance] + "のコメント"), ta, send, cancel);
+    setTimeout(() => ta.focus(), 0);
+  }
+
+  // 編集欄
+  if (openForm && openForm.editId === target.id) {
+    const ta = el("textarea");
+    ta.maxLength = 5000;
+    ta.value = openForm.text;
+    ta.oninput = () => { openForm.text = ta.value; };
+    const save = el("button", "small", "保存");
+    save.onclick = async () => {
+      const body = ta.value.trim();
+      if (!body) return say("内容を入力してください。");
+      try {
+        await updateDoc(doc(db, "posts", target.id), { body, updatedAt: serverTimestamp() });
+        openForm = null;
+        say("");
+        renderDebate();
+      } catch (e) {
+        say("保存できませんでした。編集できるのは投稿から" + EDIT_MIN + "分以内です。");
+      }
+    };
+    const cancel = el("button", "small", "やめる");
+    cancel.onclick = () => { openForm = null; renderDebate(); };
+    box.append(el("div", "meta", "編集中（投稿から" + EDIT_MIN + "分以内なら直せます。編集すると「編集済み」と表示されます）"), ta, save, cancel);
     setTimeout(() => ta.focus(), 0);
   }
   return box;
