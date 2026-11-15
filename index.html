@@ -10,8 +10,8 @@
 <meta property="og:site_name" content="哲学の問い">
 <meta property="og:title" content="哲学の問い｜問いを立て、答え、賛否を重ねる">
 <meta property="og:description" content="哲学の問いを立て、答えを書き、賛成・反対のコメントを重ねて考えを深める場所です。">
-<meta property="og:url" content="https://【fekfyuserbfyruy】.github.io/philosophy-site/">
-<meta property="og:image" content="https://【fekfyuserbfyruy】.github.io/philosophy-site/ogp.png">
+<meta property="og:url" content="https://fekfyuserbfyruy.github.io/philosophy-site/">
+<meta property="og:image" content="https://fekfyuserbfyruy.github.io/philosophy-site/ogp.png">
 <meta name="twitter:card" content="summary_large_image">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap');
@@ -238,6 +238,16 @@
   .mini-seal { display: inline-flex; align-items: center; justify-content: center; width: 1.2rem; height: 1.2rem; border-radius: 50%; background: var(--indigo); color: #fff; font-family: var(--mincho); font-weight: 700; font-size: .68rem; margin-right: .5rem; }
   .agree-count { color: var(--indigo); font-weight: 500; margin-left: .6rem; }
 
+  /* アカウントの削除 */
+  #deleteBox { background: var(--sheet); border: 1px solid var(--rule); padding: .9rem 1.4rem; }
+  #deleteBox details { border: none; padding: 0; }
+  #deleteBox summary b { color: var(--con); }
+  label.check { display: flex; align-items: center; gap: .5rem; margin: 0 0 .9rem; color: var(--ink); }
+  label.check input { width: auto; margin: 0; }
+  button.danger { background: var(--con); border-color: var(--con); }
+  button.danger:hover { background: #7d2f43; }
+  button.danger[disabled] { opacity: .45; cursor: not-allowed; }
+
   /* 共有ボタン */
   .share-row { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin: .1rem 0 1.1rem; font-size: .8rem; color: var(--ink-soft); }
   .share {
@@ -283,7 +293,8 @@
     <p><b>利用目的</b>：メールアドレスは、ログインと本人確認、確認メール・パスワード再設定メールの送信、お問い合わせへの対応、ルール違反への対応にのみ使います。</p>
     <p><b>公開される情報</b>：仮名と投稿内容・日時は、誰でも閲覧できます。メールアドレスは公開せず、法令に基づく場合を除いて第三者に提供しません。</p>
     <p><b>保管</b>：情報は Google が提供する Firebase に保管されます。パスワードは暗号化された形で保管され、運営者も見ることはできません。</p>
-    <p><b>削除・お問い合わせ</b>：アカウントの削除や個人情報に関するお問い合わせは、【ここに連絡先】までご連絡ください。</p>
+    <p><b>アカウントの削除</b>：マイページからいつでも削除できます。削除すると、メールアドレス・パスワード・仮名が消去されます。投稿した内容は議論のつながりを保つために残り、「退会したユーザー」の投稿として表示されます。</p>
+    <p><b>お問い合わせ</b>：投稿の削除の希望や、個人情報に関するお問い合わせは、【ここに連絡先】までご連絡ください。</p>
   </details>
 </section>
 
@@ -342,13 +353,24 @@
     <h2>自分の投稿</h2>
     <ul id="myPostList" class="recent"><li class="empty">読み込み中…</li></ul>
   </section>
+  <section id="deleteBox" class="hidden">
+    <details>
+      <summary><b>アカウントの削除</b></summary>
+      <p>削除すると、メールアドレス・パスワード・仮名が消去され、元に戻せません。</p>
+      <p>これまでの投稿は議論のつながりを保つために残り、「退会したユーザー」の投稿として表示されます。投稿も消したい場合は、削除の前にお問い合わせ先へご連絡ください。</p>
+      <label>確認のため、パスワードを入力してください<input id="deletePassword" type="password" autocomplete="current-password"></label>
+      <label class="check"><input id="deleteAgree" type="checkbox"> 上の内容を理解しました</label>
+      <button id="deleteBtn" class="danger" disabled>アカウントを削除する</button>
+    </details>
+  </section>
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
 import {
   getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
-  signOut, onAuthStateChanged, sendPasswordResetEmail, sendEmailVerification
+  signOut, onAuthStateChanged, sendPasswordResetEmail, sendEmailVerification,
+  deleteUser, EmailAuthProvider, reauthenticateWithCredential
 } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
 import {
   getFirestore, doc, setDoc, getDoc, deleteDoc, collection,
@@ -411,7 +433,7 @@ async function getName(uid) {
   if (!(uid in nameCache)) {
     try {
       const snap = await getDoc(doc(db, "users", uid));
-      nameCache[uid] = snap.exists() ? snap.data().displayName : "（仮名未設定）";
+      nameCache[uid] = snap.exists() ? snap.data().displayName : "退会したユーザー";
     } catch (e) {
       nameCache[uid] = "（不明）";
     }
@@ -814,6 +836,7 @@ function startMyPage(user) {
   }
   if (myStarted) return;
   myStarted = true;
+  setupDelete(user);
   const since = lastVisit(user.uid);
   let myPosts = [], replies = [], agrees = [];
   const draw = () => renderMyPage(user.uid, since, myPosts, replies, agrees);
@@ -898,6 +921,31 @@ async function renderMyPage(uid, since, myPosts, replies, agrees) {
     : [el("li", "empty", "まだ投稿がありません。")]));
 }
 
+// アカウントの削除（パスワードで本人確認 → 仮名を消去 → アカウントを削除）
+function setupDelete(user) {
+  $("deleteBox").classList.remove("hidden");
+  $("deleteAgree").onchange = () => { $("deleteBtn").disabled = !$("deleteAgree").checked; };
+  $("deleteBtn").onclick = async () => {
+    const password = $("deletePassword").value;
+    if (!password) return say("パスワードを入力してください。");
+    $("deleteBtn").disabled = true;
+    try {
+      await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, password));
+    } catch (e) {
+      $("deleteBtn").disabled = false;
+      return say("パスワードが正しくありません。");
+    }
+    try {
+      await deleteDoc(doc(db, "users", user.uid));   // 仮名を消去
+      await deleteUser(user);                         // メールアドレスとパスワードを消去
+      location.href = "./?deleted";
+    } catch (e) {
+      $("deleteBtn").disabled = false;
+      say("削除できませんでした。時間をおいてもう一度お試しください。");
+    }
+  };
+}
+
 // ============ どちらのページを表示するか ============
 // ?q=問いのID → 問いのページ ／ ?me → マイページ ／ それ以外 → トップページ
 const params = new URLSearchParams(location.search);
@@ -905,6 +953,7 @@ const threadId = params.get("q");
 if (threadId) startThread(threadId);
 else if (params.has("me")) onAuthStateChanged(auth, (user) => startMyPage(user));
 else startHome();
+if (params.has("deleted")) say("アカウントを削除しました。ご利用ありがとうございました。");
 </script>
 </body>
-</html> 
+</html>
