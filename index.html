@@ -173,7 +173,7 @@
   /* 答え（立場）：問いの直下。藍色の太い線で、賛否より一段強く */
   .node.answer { border-left: 3px solid var(--indigo); margin: 1.4rem 0 0 0; padding-left: 1.1rem; }
   .node.answer > .text { font-size: 1.12rem; font-weight: 700; }
-  .label.answer { color: var(--indigo); }
+  .label.answer { color: var(--indigo); letter-spacing: .05em; }
   .answer-btn { margin-top: .3rem; }
   /* ツリーの中の返信ボタンは目立たせない */
   .node .small { border-color: transparent; color: var(--ink-soft); font-size: .78rem; padding: .1rem .5rem; margin: 0 .2rem .2rem 0; }
@@ -304,7 +304,7 @@
     <ol>
       <li><b>登録する</b>：メールアドレス・パスワード・仮名を入力して「新規登録」を押します。届いたメールのリンクを開いてから「確認しました」を押すと、書き込めるようになります。</li>
       <li><b>問いを立てる</b>：ジャンルを選んで、考えてみたい問いを投稿します。（例：自由意志は存在するのか？）</li>
-      <li><b>答えを書く</b>：問いのページで「答えを書く」を押し、あなたの答え（立場）とその理由を書きます。1つの問いに、いくつもの答えが並びます。</li>
+      <li><b>答えを書く</b>：問いのページで「あなたの答えを書く」を押し、あなたの答え（立場）とその理由を書きます。1つの問いに、いくつもの答えが並びます。</li>
       <li><b>賛成・反対のコメントを書く</b>：答えやコメントの下に、賛成または反対の理由を重ねていきます。同意できないときは、理由を添えて反対のコメントを書いてください。</li>
       <li><b>「一理ある」を押す</b>：結論に同意するかどうかではなく、よい指摘だと思ったときに押します。自分と反対の立場の投稿にも押せます。</li>
       <li><b>マイページで振り返る</b>：自分の投稿と、それに付いたコメントや「一理ある」を確認できます。</li>
@@ -883,8 +883,14 @@ function childList(parentId, children) {
   for (const n of children[parentId] || []) {
     const node = el("div", "node " + n.stance);
     const head = el("div", "meta");
-    head.append(el("span", "label " + n.stance, STANCE[n.stance] || ""),
-                document.createTextNode(nameCache[n.authorId] + "　" + whenText(n)));
+    if (n.stance === "answer") {
+      // 答え：「仮名の答え」を印にして、仮名は二重に出さない
+      head.append(el("span", "label answer", nameCache[n.authorId] + "の答え"),
+                  document.createTextNode(whenText(n)));
+    } else {
+      head.append(el("span", "label " + n.stance, STANCE[n.stance] || ""),
+                  document.createTextNode(nameCache[n.authorId] + "　" + whenText(n)));
+    }
     if (n.updatedAt) head.append(el("span", "edited", "（編集済み）"));
     node.append(head, bodyBox(n, "text"), actions(n), childList(n.id, children));
     wrap.append(node);
@@ -991,7 +997,7 @@ function actions(target) {
   }
   const kinds = isThesis ? ["answer"] : ["pro", "con"];
   for (const stance of kinds) {
-    const label = stance === "answer" ? "答えを書く" : STANCE[stance] + "のコメントを書く";
+    const label = stance === "answer" ? "あなたの答えを書く" : STANCE[stance] + "のコメントを書く";
     const b = el("button", stance === "answer" ? "answer-btn" : "small", label);
     b.onclick = () => { openForm = { parentId: target.id, stance, text: "" }; renderDebate(); };
     row.append(b);
