@@ -152,7 +152,7 @@
   }
   #debateBox > div > .meta { margin-bottom: 1rem; }
 
-  /* 論拠のツリー：賛否の色の線が議論の筋道になる */
+  /* コメントのツリー：賛否の色の線が議論の筋道になる */
   .node {
     margin: .9rem 0 0 .4rem;
     padding: .1rem 0 .2rem 1rem;
@@ -219,7 +219,7 @@
     <ol>
       <li>相手の人格ではなく、主張に対して応答してください。否定・揶揄・人格攻撃はしないでください。</li>
       <li>賛成・反対には、かならず理由を書いてください。</li>
-      <li>1つの論拠には、1つの論点だけを書いてください。</li>
+      <li>1つのコメントには、1つの論点だけを書いてください。</li>
       <li>自分や他人を特定できる情報（本名・住所・所属など）は書かないでください。</li>
       <li>投稿は後から削除できません。内容をよく確かめてから投稿してください。</li>
       <li>ルールに反する投稿は、運営者が予告なく削除することがあります。</li>
@@ -405,7 +405,7 @@ async function savePost({ body, parentId, rootId, stance, category }) {
     parentId: parentId,                          // 問いなら null
     rootId: rootId || ref.id,                    // 問いなら自分自身のID
     stance: stance,                              // "pro" / "con"、問いなら null
-    category: category || null                   // 問いのジャンル、論拠なら null
+    category: category || null                   // 問いのジャンル、コメントなら null
   });
   return ref.id;
 }
@@ -452,7 +452,7 @@ async function renderList() {
 }
 
 // ---------- この24時間で盛り上がっている問い ----------
-// 直近24時間の投稿を読み、論拠（コメント）の数を問いごとに数える
+// 直近24時間の投稿を読み、コメント（コメント）の数を問いごとに数える
 const DAY = 24 * 60 * 60 * 1000;
 let dayPosts = [];
 onSnapshot(query(collection(db, "posts"), where("createdAt", ">=", Timestamp.fromMillis(Date.now() - DAY))), (snap) => {
@@ -475,14 +475,14 @@ function renderRanking() {
     .slice(0, 5);
   const box = $("rankList");
   if (top.length === 0) {
-    box.replaceChildren(el("li", "empty", "この24時間の論拠はまだありません。最初の論拠を書いてみましょう。"));
+    box.replaceChildren(el("li", "empty", "この24時間のコメントはまだありません。最初のコメントを書いてみましょう。"));
     return;
   }
   box.replaceChildren(...top.map((r, i) => {
     const li = el("li");
     const body = el("div", "rank-body");
     const meta = el("div", "meta");
-    meta.append(el("span", "cat", catName(r.thesis.category)), el("span", "count", "論拠 " + r.n + " 件"));
+    meta.append(el("span", "cat", catName(r.thesis.category)), el("span", "count", "コメント " + r.n + " 件"));
     body.append(el("div", "text", r.thesis.body), meta);
     li.append(el("span", "rank-no", String(i + 1)), body);
     li.onclick = () => openDebate(r.thesis.id);
@@ -490,7 +490,7 @@ function renderRanking() {
   }));
 }
 
-// ---------- 新着の投稿（問いと論拠の両方） ----------
+// ---------- 新着の投稿（問いとコメントの両方） ----------
 let recentPosts = [];
 onSnapshot(query(collection(db, "posts"), orderBy("createdAt", "desc"), limit(10)), (snap) => {
   recentPosts = snap.docs.map((d) => ({ id: d.id, ...d.data() })).filter((p) => p.rootId);
@@ -594,7 +594,7 @@ function actions(target) {
   const box = el("div");
   if (!auth.currentUser) return box;
   for (const stance of ["pro", "con"]) {
-    const b = el("button", "small", stance === "pro" ? "賛成の論拠を書く" : "反対の論拠を書く");
+    const b = el("button", "small", stance === "pro" ? "賛成のコメントを書く" : "反対のコメントを書く");
     b.onclick = () => { openForm = { parentId: target.id, stance, text: "" }; renderDebate(); };
     box.append(b);
   }
@@ -619,7 +619,7 @@ function actions(target) {
     };
     const cancel = el("button", "small", "やめる");
     cancel.onclick = () => { openForm = null; renderDebate(); };
-    box.append(el("div", "meta", openForm.stance === "pro" ? "賛成の論拠" : "反対の論拠"), ta, send, cancel);
+    box.append(el("div", "meta", openForm.stance === "pro" ? "賛成のコメント" : "反対のコメント"), ta, send, cancel);
     setTimeout(() => ta.focus(), 0);
   }
   return box;
