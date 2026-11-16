@@ -432,7 +432,7 @@
         <option value="other">その他のご意見</option>
       </select></label>
       <textarea id="boxBody" maxlength="2000" placeholder="例：問いを言葉で検索できるようにしてほしい"></textarea>
-      <button id="boxBtn">目安箱に入れる</button>
+      <button id="boxBtn">目安箱に入れる</button><span id="boxDone" class="meta"></span>
     </div>
     <p id="boxNote" class="meta"></p>
   </section>
@@ -1266,8 +1266,9 @@ function startBox(user) {
     : !user.emailVerified ? "メールアドレスの確認が済むと送れます。" : "";
 }
 $("boxBtn").onclick = async () => {
+  const done = $("boxDone");
   const body = $("boxBody").value.trim();
-  if (!body) return say("内容を入力してください。");
+  if (!body) { done.textContent = "内容を入力してください。"; return; }
   $("boxBtn").disabled = true;
   try {
     await setDoc(doc(collection(db, "suggestions")), {
@@ -1277,12 +1278,13 @@ $("boxBtn").onclick = async () => {
       createdAt: serverTimestamp()
     });
     $("boxBody").value = "";
-    say("目安箱に入れました。ご意見ありがとうございます。");
+    done.textContent = "目安箱に入れました。ご意見ありがとうございます。";
   } catch (e) {
-    say("送れませんでした。時間をおいてもう一度お試しください。");
+    done.textContent = "送れませんでした。時間をおいてもう一度お試しください。";
   }
   $("boxBtn").disabled = false;
 };
+$("boxBody").oninput = () => { $("boxDone").textContent = ""; };   // 書き始めたら表示を消す
 // ============ どちらのページを表示するか ============
 // ?q=問いのID → 問いのページ ／ ?me → マイページ ／ それ以外 → トップページ
 const params = new URLSearchParams(location.search);
