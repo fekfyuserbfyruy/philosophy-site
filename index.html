@@ -598,10 +598,19 @@ $("resendBtn").onclick = async () => {
 };
 
 // ---------- 投稿の保存 ----------
+// 投稿と同時に「投稿の記録」を進める（1分に3件までの制限。ルールでも確認している）
+const RATE_MAX = 3;
 async function savePost({ body, parentId, rootId, stance, category, parentAuthorId }) {
+  const uid = auth.currentUser.uid;
+  const userRef = doc(db, "users", uid);
+  const u = (await getDoc(userRef)).data() || {};
+  const n = u.postCount || 0;
+  const slot = "p" + (n % RATE_MAX);
+  if (u[slot] && Date.now() - u[slot].toMillis() < 60 * 1000) throw new Error("rate");
   const ref = doc(collection(db, "posts"));      // 先にIDを決める
-  await setDoc(ref, {
-    authorId: auth.currentUser.uid,
+  const batch = writeBatch(db);
+  batch.set(ref, {
+    authorId: uid,
     body: body,
     createdAt: serverTimestamp(),
     parentId: parentId,                          // 問いなら null
@@ -610,6 +619,8 @@ async function savePost({ body, parentId, rootId, stance, category, parentAuthor
     category: category || null,                  // 問いのジャンル、コメントなら null
     parentAuthorId: parentAuthorId || null       // 返信先の投稿者（マイページの「自分への反応」用）
   });
+  batch.update(userRef, { postCount: n + 1, [slot]: serverTimestamp(), lastPost: ref.id });
+  await batch.commit();
   return ref.id;
 }
 
@@ -621,7 +632,7 @@ $("thesisBtn").onclick = async () => {
     const id = await savePost({ body, parentId: null, rootId: null, stance: null, category: $("thesisCategory").value });
     location.href = "?q=" + encodeURIComponent(id);   // 立てた問いのページへ移動
   } catch (e) {
-    say("投稿できませんでした。");
+say(e.message === "rate" ? "1分間に投稿できるのは3件までです。少し待ってから、もう一度投稿してください。" : "投稿できませんでした。");
   }
 };
 
@@ -1071,7 +1082,7 @@ function actions(target) {
         say("");
         renderDebate();
       } catch (e) {
-        say("投稿できませんでした。");
+say(e.message === "rate" ? "1分間に投稿できるのは3件までです。少し待ってから、もう一度投稿してください。" : "投稿できませんでした。");
       }
     };
     const cancel = el("button", "small", "やめる");
