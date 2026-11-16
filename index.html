@@ -305,6 +305,7 @@
     /* タイトルのロゴ */
   .brand { display: inline-flex; align-items: center; gap: .45em; color: inherit; text-decoration: none; }
   .logo { width: 1.2em; height: 1.2em; flex: none; }
+    .btn-note { color: var(--con); margin-left: .3rem; }
 </style>
 </head>
 <body>
@@ -623,11 +624,21 @@ async function savePost({ body, parentId, rootId, stance, category, parentAuthor
   await batch.commit();
   return ref.id;
 }
-
+// ボタンの横にメッセージを出す
+const RATE_MSG = "1分間に投稿できるのは3件までです。少し待ってから、もう一度投稿してください。";
+function showNote(btn, text) {
+  let s = btn.nextElementSibling;
+  if (!s || !s.classList.contains("btn-note")) {
+    s = el("span", "meta btn-note");
+    btn.after(s);
+  }
+  s.textContent = text;
+}
 // 新しい問い
 $("thesisBtn").onclick = async () => {
   const body = $("thesisBody").value.trim();
-  if (!body) return say("問いを入力してください。");
+  if (e.message === "rate") showNote($("thesisBtn"), RATE_MSG);
+else say("投稿できませんでした。");
   try {
     const id = await savePost({ body, parentId: null, rootId: null, stance: null, category: $("thesisCategory").value });
     location.href = "?q=" + encodeURIComponent(id);   // 立てた問いのページへ移動
@@ -1075,7 +1086,8 @@ function actions(target) {
     const send = el("button", "small", "投稿");
     send.onclick = async () => {
       const body = ta.value.trim();
-      if (!body) return say("内容を入力してください。");
+      if (e.message === "rate") showNote(cancel, RATE_MSG);
+else say("投稿できませんでした。");
       try {
         await savePost({ body, parentId: target.id, rootId: currentRootId, stance: openForm.stance, parentAuthorId: target.authorId });
         openForm = null;
