@@ -15,7 +15,7 @@
 <meta property="og:image" content="https://fekfyuserbfyruy.github.io/philosophy-site/ogp.png">
 <meta name="twitter:card" content="summary_large_image">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap');
 
   /* 色：インクと紙。賛成は緑青、反対は臙脂 */
   :root {
@@ -27,7 +27,6 @@
     --indigo: #34466e;
     --pro: #2f6f5e;
     --con: #9c3d54;
-    --mincho: "Shippori Mincho", "Yu Mincho", "Hiragino Mincho ProN", serif;
     --gothic: "Zen Kaku Gothic New", "Hiragino Sans", "Yu Gothic", sans-serif;
   }
 
@@ -43,16 +42,14 @@
   }
   body > * { max-width: 680px; margin-left: auto; margin-right: auto; }
 
-  /* 見出し：問いの重さを明朝で */
+  /* 見出し */
   h1 {
-    font-family: var(--mincho);
     font-weight: 700;
     font-size: 2.1rem;
     letter-spacing: .08em;
     line-height: 1.3;
   }
   h2 {
-    font-family: var(--mincho);
     font-weight: 700;
     font-size: 1.15rem;
     letter-spacing: .04em;
@@ -103,7 +100,7 @@
     margin: .3rem 0 .9rem;
   }
   select { width: auto; min-width: 14rem; }
-  textarea { min-height: 6rem; resize: vertical; font-family: var(--gothic); font-size: 1rem; line-height: 1.8; }
+  textarea { min-height: 6rem; resize: vertical; font-size: 1rem; line-height: 1.8; }
   input:focus, textarea:focus, select:focus, button:focus-visible, summary:focus-visible, .thesis-item:focus-visible, a:focus-visible {
     outline: 2px solid var(--indigo);
     outline-offset: 2px;
@@ -132,26 +129,46 @@
   .small { font-size: .82rem; padding: .25rem .75rem; border-color: var(--rule); }
   #nameBtn[disabled], #boxBtn[disabled] { opacity: .45; cursor: not-allowed; }
   .btn-note { color: var(--con); margin-left: .3rem; }
+  .rule-link { font-size: .8rem; margin-left: .3rem; }
+  .auth-note { margin: .4rem 0 0; }
 
   #userBox { display: flex; align-items: center; gap: .35rem; padding: .6rem 1.4rem; font-size: .9rem; color: var(--ink-soft); }
   #userBox.hidden { display: none; }
   #userBox button { margin: 0 0 0 auto; }
-  #me { font-family: var(--mincho); font-size: 1.05rem; }
+  #me { font-weight: 500; font-size: 1.05rem; color: var(--ink); }
 
   .meta { font-size: .8rem; color: var(--ink-soft); }
   .text { white-space: pre-wrap; }
   .hidden { display: none; }
   a { color: var(--indigo); cursor: pointer; text-underline-offset: 3px; }
 
-  /* ジャンル一覧 */
+  /* 検索 */
+  .search-row { display: flex; gap: .5rem; }
+  .search-row input { margin: 0; }
+  .search-row button { margin: 0; flex: none; }
+  .search-head { display: flex; align-items: center; gap: .5rem; margin: 1rem 0 .3rem; }
+  .search-head button { margin: 0 0 0 auto; }
+  .more { display: block; margin: .8rem auto 0; }
+  .more.hidden { display: none; }
+
+  /* ジャンル一覧（最初は折りたたみ） */
+  section.genre-box { background: var(--sheet); border: 1px solid var(--rule); padding: 1.25rem 1.4rem; }
+  .genre-box details, .genre-box details:last-child { border: none; padding: 0; }
+  .genre-box summary { list-style: none; display: flex; align-items: baseline; gap: .5rem; color: var(--ink); font-size: 1rem; }
+  .genre-box summary::-webkit-details-marker { display: none; }
+  .genre-box summary::before { content: "▸"; color: var(--indigo); display: inline-block; transition: transform .15s; }
+  .genre-box details[open] summary::before { transform: rotate(90deg); }
+  .genre-box details[open] summary { margin-bottom: .9rem; }
+  .genre-box summary h2 { display: inline; margin: 0; }
+  .genre-box summary .note { font-size: .78rem; font-weight: 400; color: var(--ink-soft); }
   .genre-group + .genre-group { margin-top: 1.1rem; }
-  .genre-group h3 { font-family: var(--gothic); font-size: .8rem; font-weight: 500; color: var(--ink-soft); margin: 0 0 .5rem; }
+  .genre-group h3 { font-size: .8rem; font-weight: 500; color: var(--ink-soft); margin: 0 0 .5rem; }
   .genre-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr)); gap: .5rem; }
   .genre-grid a { display: block; padding: .6rem .8rem; background: #fff; border: 1px solid var(--rule); border-radius: 4px; color: var(--ink); text-decoration: none; }
   .genre-grid a:hover { border-color: var(--indigo); background: #f3f5f2; }
-  .g-name { display: block; font-family: var(--mincho); font-weight: 700; font-size: 1rem; line-height: 1.5; }
+  .g-name { display: block; font-weight: 700; font-size: 1rem; line-height: 1.5; }
   .g-hint { display: block; font-size: .72rem; color: var(--ink-soft); line-height: 1.5; }
-  .genre-title { font-family: var(--mincho); font-size: 1.6rem; margin: .4rem auto 1rem; }
+  .genre-title { font-weight: 700; font-size: 1.6rem; margin: .4rem auto 1rem; }
 
   /* 問いの一覧：問いそのものを主役に */
   a.thesis-item, .rank a, .recent a { display: block; color: inherit; text-decoration: none; }
@@ -163,7 +180,7 @@
   }
   .thesis-item:first-child { border-top: none; }
   .thesis-item:hover { border-left-color: var(--indigo); background: #f3f5f2; }
-  .thesis-item .text { font-family: var(--mincho); font-size: 1.15rem; line-height: 1.7; margin-bottom: .2rem; }
+  .thesis-item .text { font-weight: 500; font-size: 1.1rem; line-height: 1.7; margin-bottom: .3rem; }
 
   .cat {
     display: inline-block;
@@ -177,11 +194,10 @@
   /* 議論画面 */
   #backLink { font-size: .9rem; }
   .thesis {
-    font-family: var(--mincho);
     font-weight: 700;
-    font-size: 1.6rem;
+    font-size: 1.55rem;
     line-height: 1.6;
-    letter-spacing: .03em;
+    letter-spacing: .02em;
     margin-bottom: .4rem;
   }
   #debateBox > div > .meta { margin-bottom: 1rem; }
@@ -201,12 +217,11 @@
   /* ツリーの中の返信ボタンは目立たせない */
   .node .small { border-color: transparent; color: var(--ink-soft); font-size: .78rem; padding: .1rem .5rem; margin: 0 .2rem .2rem 0; }
   .node .small:hover { color: var(--indigo); background: #e3e7ef; }
-  .node > .text { font-family: var(--gothic); font-size: 1rem; line-height: 1.9; letter-spacing: .02em; margin: .7rem 0 .8rem; }
+  .node > .text { font-size: 1rem; line-height: 1.9; letter-spacing: .02em; margin: .7rem 0 .8rem; }
 
   /* 答え・賛・反の印（はんこ風） */
   .label {
     display: inline-block;
-    font-family: var(--mincho);
     font-weight: 700;
     font-size: .78rem;
     letter-spacing: .15em;
@@ -235,33 +250,33 @@
   .seal {
     width: 1.45rem; height: 1.45rem; border-radius: 50%;
     border: 1.5px solid currentColor;
-    font-family: var(--mincho); font-weight: 700; font-size: .78rem;
+    font-weight: 700; font-size: .75rem;
     display: inline-flex; align-items: center; justify-content: center;
   }
   .agree.on { color: var(--indigo); font-weight: 700; }
   .agree.on .seal { background: var(--indigo); border-color: var(--indigo); color: #fff; animation: stamp .22s ease-out; }
   @keyframes stamp { from { transform: scale(1.35) rotate(-12deg); opacity: .4; } to { transform: none; opacity: 1; } }
 
-  /* 盛り上がっている問い・新着 */
+  /* 盛り上がっている問い・新着・履歴・マイページの一覧 */
   .rank, .recent { list-style: none; margin: 0; padding: 0; }
   .rank li, .recent li { border-top: 1px solid var(--rule); }
   .rank li:first-child, .recent li:first-child { border-top: none; }
-  .rank a { display: flex; gap: 1rem; align-items: baseline; padding: .7rem .25rem; }
+  .rank a { display: flex; gap: 1rem; align-items: baseline; padding: .8rem .25rem; }
   .rank a:hover, .recent a:hover { background: #f3f5f2; }
-  .rank-no { font-family: var(--mincho); font-weight: 700; font-size: 1.5rem; color: var(--indigo); min-width: 1.4rem; text-align: right; line-height: 1; }
+  .rank-no { font-weight: 700; font-size: 1.5rem; color: var(--indigo); min-width: 1.4rem; text-align: right; line-height: 1; }
   .rank-body { flex: 1; }
-  .rank-body .text { font-family: var(--mincho); font-size: 1.05rem; line-height: 1.6; }
+  .rank-body .text { font-weight: 500; font-size: 1.02rem; line-height: 1.6; margin-bottom: .3rem; }
   .count { font-size: .8rem; color: var(--indigo); font-weight: 500; }
-  .recent a { padding: .6rem .25rem; }
-  .recent .text { font-size: .92rem; line-height: 1.6; }
-  .recent .about { font-size: .8rem; color: var(--ink-soft); }
+  .recent a { padding: .85rem .25rem; }
+  .recent .text { font-size: .92rem; line-height: 1.7; margin: .4rem 0; }
+  .recent .about { font-size: .8rem; color: var(--ink-soft); margin-top: .1rem; }
   .tag-thesis { display: inline-block; font-size: .72rem; color: var(--ink-soft); border: 1px solid var(--rule); border-radius: 2px; padding: 0 .35rem; margin-right: .6rem; line-height: 1.5; }
   .empty { font-size: .9rem; color: var(--ink-soft); }
 
   /* マイページ */
   #myLink { margin-left: .6rem; font-size: .85rem; }
   .new-badge { display: inline-block; font-size: .7rem; font-weight: 700; color: #fff; background: var(--con); border-radius: 2px; padding: 0 .35rem; margin-left: .5rem; line-height: 1.5; }
-  .mini-seal { display: inline-flex; align-items: center; justify-content: center; width: 1.2rem; height: 1.2rem; border-radius: 50%; background: var(--indigo); color: #fff; font-family: var(--mincho); font-weight: 700; font-size: .68rem; margin-right: .5rem; }
+  .mini-seal { display: inline-flex; align-items: center; justify-content: center; width: 1.2rem; height: 1.2rem; border-radius: 50%; background: var(--indigo); color: #fff; font-weight: 700; font-size: .66rem; margin-right: .5rem; }
   .agree-count { color: var(--indigo); font-weight: 500; margin-left: .6rem; }
 
   /* 並び替え・編集・通報 */
@@ -285,8 +300,8 @@
 
   /* 閲覧履歴 */
   #historyBox h2 { display: flex; align-items: baseline; gap: .8rem; }
-  #historyBox h2 .note { font-family: var(--gothic); font-weight: 400; font-size: .75rem; letter-spacing: 0; color: var(--ink-soft); }
-  #clearHistory { margin: 0 0 0 auto; font-family: var(--gothic); font-weight: 500; letter-spacing: 0; }
+  #historyBox h2 .note { font-weight: 400; font-size: .75rem; letter-spacing: 0; color: var(--ink-soft); }
+  #clearHistory { margin: 0 0 0 auto; font-weight: 500; letter-spacing: 0; }
 
   /* アカウントの削除 */
   #deleteBox { background: var(--sheet); border: 1px solid var(--rule); padding: .9rem 1.4rem; }
@@ -313,7 +328,7 @@
     h1 { font-size: 1.6rem; }
     .site-head { margin-top: 2rem; }
     .thesis { font-size: 1.3rem; }
-    section { padding: 1rem; }
+    section, section.genre-box { padding: 1rem; }
     .node { margin-left: 0; padding-left: .75rem; }
     select { min-width: 0; width: 100%; }
   }
@@ -328,13 +343,13 @@
 <p class="tagline">様々な問いを、みんなで考える広場</p>
 <p id="msg"></p>
 
-<!-- 使い方・議論のルール・個人情報の取り扱い -->
-<section>
-  <details>
+<!-- 使い方・議論のルール・個人情報の取り扱い（ホームだけに表示） -->
+<section id="infoBox">
+  <details id="guideInfo">
     <summary><b>このサイトの使い方</b></summary>
     <ol>
       <li><b>登録する</b>：メールアドレス・パスワード・仮名を入力して「新規登録」を押します。届いたメールのリンクを開いてから「確認しました」を押すと、書き込めるようになります。</li>
-      <li><b>問いを立てる</b>：ホームの「ジャンルから探す」でジャンルを選び、そのページで考えてみたい問いを投稿します。（例：自由意志は存在するのか？）</li>
+      <li><b>問いを探す・立てる</b>：ホームの検索欄で問いを探せます。「ジャンルから探す」でジャンルを選ぶと、そのページで問いを立てられます。（例：自由意志は存在するのか？）</li>
       <li><b>答えを書く</b>：問いのページで「あなたの答えを書く」を押し、あなたの答え（立場）とその理由を書きます。1つの問いに、いくつもの答えが並びます。</li>
       <li><b>賛成・反対のコメントを書く</b>：答えやコメントの下に、賛成または反対の理由を重ねていきます。同意できないときは、理由を添えて反対のコメントを書いてください。</li>
       <li><b>「一理ある」を押す</b>：結論に同意するかどうかではなく、よい指摘だと思ったときに押します。自分と反対の立場の投稿にも押せます。</li>
@@ -342,7 +357,7 @@
       <li><b>その他</b>：投稿は15分以内なら直せます。ルールに反する投稿は「通報」してください。問いのページから、X・LINEで共有することもできます。サイトへのご意見は、右上の「目安箱」へどうぞ。</li>
     </ol>
   </details>
-  <details>
+  <details id="rulesInfo">
     <summary><b>議論のルール</b>（投稿する前にお読みください）</summary>
     <ol>
       <li>相手の人格ではなく、主張に対して応答してください。否定・揶揄・人格攻撃はしないでください。</li>
@@ -354,7 +369,7 @@
       <li>運営者の投稿には「運営」の印が付きます。印のない投稿は、名前が「運営」や「管理人」でも運営者のものではありません。</li>
     </ol>
   </details>
-  <details>
+  <details id="privacyInfo">
     <summary><b>個人情報の取り扱い</b></summary>
     <p>このサイトは試作版で、個人が運営しています。</p>
     <p><b>取得する情報</b>：メールアドレス、パスワード、仮名、投稿の内容と日時、目安箱に送られた内容</p>
@@ -376,6 +391,7 @@
   <button id="loginBtn">ログイン</button>
   <button id="signupBtn">新規登録</button>
   <button id="resetBtn">パスワードを忘れた</button>
+  <p class="meta auth-note">新規登録の前に、<a href="./#privacyInfo" target="_blank" rel="noopener">個人情報の取り扱い</a>と<a href="./#rulesInfo" target="_blank" rel="noopener">議論のルール</a>をお読みください。</p>
 </section>
 
 <section id="userBox" class="hidden">
@@ -389,11 +405,22 @@
   <button id="resendBtn" class="small">確認メールをもう一度送る</button>
 </section>
 
-<!-- ホーム：ジャンル一覧など -->
+<!-- ホーム -->
 <div id="homeView">
   <section>
-    <h2>ジャンルから探す</h2>
-    <div id="genreList"></div>
+    <h2>問いを検索</h2>
+    <div class="search-row"><input id="homeQ" type="search" maxlength="50" placeholder="例：自由意志"><button id="homeQBtn">検索</button></div>
+    <div id="homeQResult" class="hidden">
+      <div class="search-head"><span class="meta" id="homeQInfo"></span><button id="homeQClear" class="small">検索をやめる</button></div>
+      <div id="homeQList"></div>
+      <button id="homeQMore" class="small more hidden">もっと見る</button>
+    </div>
+  </section>
+  <section class="genre-box">
+    <details>
+      <summary><h2>ジャンルから探す</h2><span class="note" id="genreCount"></span></summary>
+      <div id="genreList"></div>
+    </details>
   </section>
   <section id="historyBox" class="hidden">
     <h2>最近見た問い <span class="note">この端末にだけ保存されます</span><button id="clearHistory" class="small">履歴を消す</button></h2>
@@ -411,12 +438,21 @@
 
 <!-- ジャンルのページ -->
 <div id="genreView" class="hidden">
-  <p><a href="./">← ジャンル一覧に戻る</a></p>
+  <p><a href="./">← ホームに戻る</a></p>
   <h2 id="genreTitle" class="genre-title"></h2>
   <section id="newThesisBox" class="hidden">
     <h2>この分野で新しい問いを立てる</h2>
     <textarea id="thesisBody" maxlength="5000" placeholder="例：自由意志は存在するのか？"></textarea>
-    <button id="thesisBtn">投稿</button>
+    <button id="thesisBtn">投稿</button><a class="rule-link" href="./#rulesInfo" target="_blank" rel="noopener">議論のルール</a>
+  </section>
+  <section>
+    <h2>このジャンルの問いを検索</h2>
+    <div class="search-row"><input id="genreQ" type="search" maxlength="50" placeholder="例：自由意志"><button id="genreQBtn">検索</button></div>
+    <div id="genreQResult" class="hidden">
+      <div class="search-head"><span class="meta" id="genreQInfo"></span><button id="genreQClear" class="small">検索をやめる</button></div>
+      <div id="genreQList"></div>
+      <button id="genreQMore" class="small more hidden">もっと見る</button>
+    </div>
   </section>
   <section>
     <h2>問いの一覧</h2>
@@ -472,7 +508,7 @@
         <option value="bug">不具合の報告</option>
         <option value="other">その他のご意見</option>
       </select></label>
-      <textarea id="boxBody" maxlength="2000" placeholder="例：問いを言葉で検索できるようにしてほしい"></textarea>
+      <textarea id="boxBody" maxlength="2000" placeholder="例：問いを並べ替えられるようにしてほしい"></textarea>
       <button id="boxBtn">目安箱に入れる</button><span id="boxDone" class="meta"></span>
     </div>
     <p id="boxNote" class="meta"></p>
@@ -487,7 +523,7 @@ import {
   deleteUser, EmailAuthProvider, reauthenticateWithCredential
 } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
 import {
-  getFirestore, doc, setDoc, getDoc, deleteDoc, updateDoc, collection, writeBatch, increment,
+  getFirestore, doc, setDoc, getDoc, getDocs, deleteDoc, updateDoc, collection, writeBatch, increment,
   query, where, orderBy, limit, onSnapshot, serverTimestamp, Timestamp
 } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-analytics.js";
@@ -517,6 +553,7 @@ const el = (tag, cls, text) => {
 const timeOf = (p) => p.createdAt ? p.createdAt.toMillis() : Date.now();
 const whenText = (p) => p.createdAt ? p.createdAt.toDate().toLocaleString("ja-JP") : "送信中…";
 const DAY = 24 * 60 * 60 * 1000;
+const PAGE = 20;                // 一覧・検索結果を一度に読む件数
 
 // ---------- ジャンル ----------
 // 左がデータベースに保存する値（ルールと一致させる）、右が画面に出す名前
@@ -555,7 +592,8 @@ const catName = (key) => {
   const full = CATEGORIES[key];
   return full ? full.replace(/（.*）/, "") : "未分類";   // 一覧では短い名前だけ表示
 };
-// ホームのジャンル一覧（グループごとに並べる）
+// ホームのジャンル一覧（グループごとに並べる。最初は折りたたんでおく）
+$("genreCount").textContent = "（全" + Object.keys(CATEGORIES).length + "ジャンル）";
 for (const [group, cats] of CATEGORY_GROUPS) {
   const box = el("div", "genre-group");
   box.append(el("h3", "", group));
@@ -669,6 +707,16 @@ $("resendBtn").onclick = async () => {
   }
 };
 
+// ---------- 検索用の語（2文字ずつ） ----------
+// 全角・半角、大文字・小文字の違いをそろえ、空白を取り除く
+const norm = (s) => s.normalize("NFKC").toLowerCase().replace(/\s+/g, "");
+function makeGrams(text) {
+  const chars = Array.from(norm(text)).slice(0, 200);   // 問いの最初の200文字から作る
+  const set = new Set();
+  for (let i = 0; i < chars.length - 1; i++) set.add(chars[i] + chars[i + 1]);
+  return [...set].slice(0, 200);
+}
+
 // ---------- 投稿の保存 ----------
 // 投稿と同時に「投稿の記録」を進める（1分に3件までの制限。ルールでも確認している）
 const RATE_MAX = 3;
@@ -680,8 +728,7 @@ async function savePost({ body, parentId, rootId, stance, category, parentAuthor
   const slot = "p" + (n % RATE_MAX);
   if (u[slot] && Date.now() - u[slot].toMillis() < 60 * 1000) throw new Error("rate");
   const ref = doc(collection(db, "posts"));      // 先にIDを決める
-  const batch = writeBatch(db);
-  batch.set(ref, {
+  const data = {
     authorId: uid,
     body: body,
     createdAt: serverTimestamp(),
@@ -690,7 +737,10 @@ async function savePost({ body, parentId, rootId, stance, category, parentAuthor
     stance: stance,                              // "answer" / "pro" / "con"、問いなら null
     category: category || null,                  // 問いのジャンル、コメントなら null
     parentAuthorId: parentAuthorId || null       // 返信先の投稿者（マイページの「自分への反応」用）
-  });
+  };
+  if (!parentId) data.grams = makeGrams(body);   // 問いだけ、検索用の語を付ける
+  const batch = writeBatch(db);
+  batch.set(ref, data);
   batch.update(userRef, { postCount: n + 1, [slot]: serverTimestamp(), lastPost: ref.id });
   await batch.commit();
   return ref.id;
@@ -746,12 +796,68 @@ async function thesisData(id) {
   return thesisStore[id];
 }
 
+// 問いの一覧の1行（ジャンルのページの一覧と、検索結果で使う）
+async function thesisItem(t, showCat) {
+  const a = el("a", "thesis-item");
+  a.href = threadUrl(t.id);
+  const meta = el("div", "meta");
+  if (showCat) meta.append(el("span", "cat", catName(t.category)));
+  meta.append(document.createTextNode((await getName(t.authorId)) + "　" + whenText(t)));
+  meta.append(...adminBadge(t.authorId));
+  a.append(el("div", "text", bodyOf(t)), meta);
+  return a;
+}
+
+// ============ 検索（ホームでは全ジャンル、ジャンルのページではそのジャンルだけ） ============
+function setupSearch(prefix, genre) {
+  const input = $(prefix + "Q"), result = $(prefix + "QResult"), info = $(prefix + "QInfo");
+  const list = $(prefix + "QList"), more = $(prefix + "QMore");
+  let count = PAGE;
+  async function run() {
+    const raw = input.value.trim();
+    const word = norm(raw);
+    const chars = Array.from(word);
+    result.classList.remove("hidden");
+    if (chars.length < 2) {
+      info.textContent = "2文字以上で検索してください。";
+      list.replaceChildren();
+      more.classList.add("hidden");
+      return;
+    }
+    info.textContent = "検索中…";
+    const conds = [where("grams", "array-contains", chars[0] + chars[1])];
+    if (genre) conds.unshift(where("category", "==", genre));
+    try {
+      const snap = await getDocs(query(collection(db, "posts"), ...conds, orderBy("createdAt", "desc"), limit(count)));
+      const hits = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+        .filter((t) => norm(t.body).includes(word));        // 検索語をまるごと含むものだけ
+      for (const t of hits) thesisStore[t.id] = t;
+      info.textContent = "「" + raw + "」を含む問い：" + hits.length + "件";
+      list.replaceChildren(...(hits.length
+        ? await Promise.all(hits.map((t) => thesisItem(t, !genre)))
+        : [el("p", "empty", "見つかりませんでした。別の言葉でも試してみてください。")]));
+      more.classList.toggle("hidden", snap.size < count);   // まだ続きがありそうなら表示
+    } catch (e) {
+      console.error(e);   // インデックスが未作成のときは、ここに作成用のリンクが出る
+      info.textContent = "検索できませんでした。";
+      list.replaceChildren();
+      more.classList.add("hidden");
+    }
+  }
+  $(prefix + "QBtn").onclick = () => { count = PAGE; run(); };
+  input.onkeydown = (e) => { if (e.key === "Enter" && !e.isComposing) { count = PAGE; run(); } };
+  more.onclick = () => { count += PAGE; run(); };
+  $(prefix + "QClear").onclick = () => { input.value = ""; result.classList.add("hidden"); };
+}
+
 // ============ ホーム ============
 let dayPosts = [];
 let recentPosts = [];
 
 function startHome() {
   renderHistory();
+  setupSearch("home", null);
+  openFromHash();
 
   // この24時間の書き込み（ランキング用）
   onSnapshot(query(collection(db, "posts"), where("createdAt", ">=", Timestamp.fromMillis(Date.now() - DAY))), (snap) => {
@@ -768,6 +874,17 @@ function startHome() {
     renderRecent();
   }, () => { $("recentList").replaceChildren(el("li", "empty", "読み込めませんでした。")); });
 }
+
+// アドレスの最後が #rulesInfo などのときは、その項目を開いて表示する
+function openFromHash() {
+  const id = decodeURIComponent(location.hash.slice(1));
+  const target = id ? document.getElementById(id) : null;
+  if (target && target.tagName === "DETAILS") {
+    target.open = true;
+    target.scrollIntoView({ block: "start" });
+  }
+}
+window.addEventListener("hashchange", openFromHash);
 
 // この24時間で盛り上がっている問い（答え・コメントの数）
 async function renderRanking() {
@@ -826,7 +943,6 @@ async function renderRecent() {
 }
 
 // ============ ジャンルのページ（?g=ジャンル） ============
-const PAGE = 20;                // 問いの一覧を一度に読む件数
 let listLimit = PAGE;
 let listTheses = [];
 let unsubList = null;
@@ -844,6 +960,7 @@ function startGenre(key) {
   currentGenre = key;
   $("genreTitle").textContent = catName(key);
   document.title = catName(key) + "｜アゴラ";
+  setupSearch("genre", key);
   $("moreBtn").onclick = () => { listLimit += PAGE; subscribeList(); };
   subscribeList();
 }
@@ -859,7 +976,7 @@ function subscribeList() {
     $("moreBtn").classList.toggle("hidden", snap.size < listLimit);   // まだ続きがありそうなら表示
     renderList();
   }, (e) => {
-    console.error(e);   // インデックスが未作成のときは、ここに作成用のリンクが出る
+    console.error(e);
     $("thesisList").textContent = "読み込めませんでした。";
   });
 }
@@ -867,16 +984,7 @@ function subscribeList() {
 async function renderList() {
   const box = $("thesisList");
   if (listTheses.length === 0) { box.textContent = "まだ問いがありません。最初の問いを立ててみましょう。"; return; }
-  const items = await Promise.all(listTheses.map(async (t) => {
-    const a = el("a", "thesis-item");
-    a.href = threadUrl(t.id);
-    const meta = el("div", "meta");
-    meta.append(document.createTextNode((await getName(t.authorId)) + "　" + whenText(t)));
-    meta.append(...adminBadge(t.authorId));
-    a.append(el("div", "text", bodyOf(t)), meta);
-    return a;
-  }));
-  box.replaceChildren(...items);
+  box.replaceChildren(...await Promise.all(listTheses.map((t) => thesisItem(t, false))));
 }
 
 // ============ 閲覧履歴（この端末のブラウザにだけ保存。サーバーには送らない） ============
@@ -1133,6 +1241,15 @@ function reportButton(target) {
   return b;
 }
 
+// 議論のルールへのリンク（書いている途中の文が消えないよう、新しいタブで開く）
+function ruleLink() {
+  const a = el("a", "rule-link", "議論のルール");
+  a.href = "./#rulesInfo";
+  a.target = "_blank";
+  a.rel = "noopener";
+  return a;
+}
+
 // 書き込みボタンと書き込み欄
 //   問い → 「あなたの答えを書く」
 //   答え・コメント → 「一理ある」「賛成のコメントを書く」「反対のコメントを書く」
@@ -1195,7 +1312,7 @@ function actions(target) {
       }
     };
     cancel.onclick = () => { openForm = null; renderDebate(); };
-    box.append(el("div", "meta", openForm.stance === "answer" ? "あなたの答え" : STANCE[openForm.stance] + "のコメント"), ta, send, cancel);
+    box.append(el("div", "meta", openForm.stance === "answer" ? "あなたの答え" : STANCE[openForm.stance] + "のコメント"), ta, send, cancel, ruleLink());
     setTimeout(() => ta.focus(), 0);
   }
 
@@ -1209,8 +1326,10 @@ function actions(target) {
     save.onclick = async () => {
       const body = ta.value.trim();
       if (!body) return say("内容を入力してください。");
+      const data = { body, updatedAt: serverTimestamp() };
+      if (!target.parentId) data.grams = makeGrams(body);   // 問いは検索用の語も直す
       try {
-        await updateDoc(doc(db, "posts", target.id), { body, updatedAt: serverTimestamp() });
+        await updateDoc(doc(db, "posts", target.id), data);
         openForm = null;
         say("");
         renderDebate();
@@ -1428,6 +1547,9 @@ $("boxBody").oninput = () => { $("boxDone").textContent = ""; };   // 書き始�
 // ?q=問いのID → 問いのページ ／ ?g=ジャンル → ジャンルのページ ／ ?me → マイページ ／ ?box → 目安箱 ／ それ以外 → ホーム
 const params = new URLSearchParams(location.search);
 const threadId = params.get("q");
+if (threadId || params.has("g") || params.has("me") || params.has("box")) {
+  $("infoBox").classList.add("hidden");   // 使い方・ルール・個人情報はホームだけに出す
+}
 if (threadId) startThread(threadId);
 else if (params.has("g")) startGenre(params.get("g"));
 else if (params.has("me")) onAuthStateChanged(auth, (user) => startMyPage(user));
