@@ -306,6 +306,7 @@
   .brand { display: inline-flex; align-items: center; gap: .45em; color: inherit; text-decoration: none; }
   .logo { width: 1.2em; height: 1.2em; flex: none; }
     .btn-note { color: var(--con); margin-left: .3rem; }
+    .admin-badge { display: inline-block; font-size: .7rem; font-weight: 700; color: #fff; background: var(--indigo); border-radius: 2px; padding: 0 .4rem; margin-left: .5rem; line-height: 1.5; }
 </style>
 </head>
 <body>
@@ -327,6 +328,7 @@
       <li><b>「一理ある」を押す</b>：結論に同意するかどうかではなく、よい指摘だと思ったときに押します。自分と反対の立場の投稿にも押せます。</li>
       <li><b>マイページで振り返る</b>：自分の投稿と、それに付いたコメントや「一理ある」を確認できます。</li>
       <li><b>その他</b>：投稿は15分以内なら直せます。ルールに反する投稿は「通報」してください。問いのページから、X・LINEで共有することもできます。</li>
+            <li>運営者の投稿には「運営」の印が付きます。印のない投稿は、名前が「運営」や「管理人」でも運営者のものではありません。</li>
     </ol>
   </details>
   <details>
@@ -517,6 +519,9 @@ for (const key of Object.keys(CATEGORIES)) {
 }
 
 // ---------- 仮名の取得 ----------
+  // 運営者（UIDで見分ける。仮名は関係ない）
+const ADMIN_UID = "ここに自分のUID";
+const adminBadge = (uid) => (uid === ADMIN_UID ? [el("span", "admin-badge", "運営")] : []);
 const nameCache = {};
 async function getName(uid) {
   if (!(uid in nameCache)) {
@@ -882,6 +887,7 @@ async function renderDebate() {
   const rootMeta = el("div", "meta");
   rootMeta.append(el("span", "cat", catName(root.category)),
                   document.createTextNode(nameCache[root.authorId] + "　" + whenText(root)));
+    rootMeta.append(...adminBadge(root.authorId));
   if (root.updatedAt) rootMeta.append(el("span", "edited", "（編集済み）"));
   top.append(bodyBox(root, "thesis text"), rootMeta, shareRow(root), actions(root));
   if (!children[root.id]) {
@@ -954,6 +960,7 @@ function childList(parentId, children) {
       head.append(el("span", "label " + n.stance, STANCE[n.stance] || ""),
                   document.createTextNode(nameCache[n.authorId] + "　" + whenText(n)));
     }
+        head.append(...adminBadge(n.authorId));
     if (n.updatedAt) head.append(el("span", "edited", "（編集済み）"));
     node.append(head, bodyBox(n, "text"), actions(n), childList(n.id, children));
     wrap.append(node);
