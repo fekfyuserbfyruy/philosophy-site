@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>アゴラ</title>
-  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
 <!-- SNSで共有したときの表示（OGP） -->
 <meta name="description" content="哲学の問いを立て、答えを書き、賛成・反対のコメントを重ねて考えを深める場所です。">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="アゴラ">
-<meta property="og:title" content="哲学の問い｜問いを立て、答え、賛否を重ねる">
+<meta property="og:title" content="アゴラ｜哲学の問いを立て、答え、賛否を重ねる">
 <meta property="og:description" content="哲学の問いを立て、答えを書き、賛成・反対のコメントを重ねて考えを深める場所です。">
 <meta property="og:url" content="https://fekfyuserbfyruy.github.io/philosophy-site/">
 <meta property="og:image" content="https://fekfyuserbfyruy.github.io/philosophy-site/ogp.png">
@@ -50,8 +50,6 @@
     font-size: 2.1rem;
     letter-spacing: .08em;
     line-height: 1.3;
-    margin-top: 3rem;
-    margin-bottom: .25rem;
   }
   h2 {
     font-family: var(--mincho);
@@ -62,6 +60,18 @@
   }
   #msg { color: var(--con); min-height: 1.6em; font-size: .9rem; margin: 0 auto .5rem; }
 
+  /* タイトル（ロゴ）と目安箱を1行に並べる */
+  .site-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-top: 3rem; margin-bottom: .25rem; }
+  .site-head h1 { margin: 0; }
+  .brand { display: inline-flex; align-items: center; gap: .45em; color: inherit; text-decoration: none; }
+  .logo { width: 1.2em; height: 1.2em; flex: none; }
+  .box-link {
+    flex: none; font-size: .82rem; text-decoration: none;
+    color: var(--indigo); border: 1px solid var(--rule); border-radius: 999px;
+    padding: .15rem .9rem; background: var(--sheet);
+  }
+  .box-link:hover { border-color: var(--indigo); }
+
   section {
     background: var(--sheet);
     border: 1px solid var(--rule);
@@ -69,7 +79,7 @@
     padding: 1.25rem 1.4rem;
     margin-bottom: 1.25rem;
   }
-  /* 折りたたみ（ルール・個人情報）は控えめに */
+  /* 折りたたみ（使い方・ルール・個人情報）は控えめに */
   section:has(> details) { background: transparent; border: none; padding: 0; }
   details { border-top: 1px solid var(--rule); padding: .5rem 0; }
   details:last-child { border-bottom: 1px solid var(--rule); }
@@ -119,6 +129,8 @@
   #resetBtn { border-color: transparent; text-decoration: underline; text-underline-offset: 3px; padding-left: .3rem; padding-right: .3rem; }
   #resetBtn:hover, #logoutBtn:hover, .small:hover { background: #e3e7ef; }
   .small { font-size: .82rem; padding: .25rem .75rem; border-color: var(--rule); }
+  #nameBtn[disabled], #boxBtn[disabled] { opacity: .45; cursor: not-allowed; }
+  .btn-note { color: var(--con); margin-left: .3rem; }
 
   #userBox { display: flex; align-items: center; gap: .35rem; padding: .6rem 1.4rem; font-size: .9rem; color: var(--ink-soft); }
   #userBox.hidden { display: none; }
@@ -174,14 +186,13 @@
   /* 答え（立場）：問いの直下。藍色の太い線で、賛否より一段強く */
   .node.answer { border-left: 3px solid var(--indigo); margin: 1.4rem 0 0 0; padding-left: 1.1rem; }
   .node.answer > .text { font-size: 1.12rem; font-weight: 700; }
-  .label.answer { color: var(--indigo); letter-spacing: .05em; }
   .answer-btn { margin-top: .3rem; }
   /* ツリーの中の返信ボタンは目立たせない */
   .node .small { border-color: transparent; color: var(--ink-soft); font-size: .78rem; padding: .1rem .5rem; margin: 0 .2rem .2rem 0; }
   .node .small:hover { color: var(--indigo); background: #e3e7ef; }
   .node > .text { font-family: var(--mincho); font-size: 1.02rem; line-height: 1.9; margin: .2rem 0 .4rem; }
 
-  /* 賛・反の印（はんこ風） */
+  /* 答え・賛・反の印（はんこ風） */
   .label {
     display: inline-block;
     font-family: var(--mincho);
@@ -194,8 +205,11 @@
     margin-right: .6rem;
     line-height: 1.5;
   }
+  .label.answer { color: var(--indigo); letter-spacing: .05em; }
   .label.pro { color: var(--pro); }
   .label.con { color: var(--con); }
+  /* 運営者の印 */
+  .admin-badge { display: inline-block; font-size: .7rem; font-weight: 700; color: #fff; background: var(--indigo); border-radius: 2px; padding: 0 .4rem; margin-left: .5rem; line-height: 1.5; }
 
   /* 一理あるボタン：「理」の丸い印。押すと印が押される */
   .agree {
@@ -285,40 +299,26 @@
 
   @media (max-width: 520px) {
     body { padding: 0 .9rem 3rem; }
-    h1 { font-size: 1.6rem; margin-top: 2rem; }
+    h1 { font-size: 1.6rem; }
+    .site-head { margin-top: 2rem; }
     .thesis { font-size: 1.3rem; }
     section { padding: 1rem; }
     .node { margin-left: 0; padding-left: .75rem; }
     select { min-width: 0; width: 100%; }
   }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
-     /* タイトルと目安箱を1行に並べる */
-  .site-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-top: 3rem; margin-bottom: .25rem; }
-  .site-head h1 { margin: 0; }
-  .box-link {
-    flex: none; font-size: .82rem; text-decoration: none;
-    color: var(--indigo); border: 1px solid var(--rule); border-radius: 999px;
-    padding: .15rem .9rem; background: var(--sheet);
-  }
-  .box-link:hover { border-color: var(--indigo); }
-  @media (max-width: 520px) { .site-head { margin-top: 2rem; } }
-    /* タイトルのロゴ */
-  .brand { display: inline-flex; align-items: center; gap: .45em; color: inherit; text-decoration: none; }
-  .logo { width: 1.2em; height: 1.2em; flex: none; }
-    .btn-note { color: var(--con); margin-left: .3rem; }
-    .admin-badge { display: inline-block; font-size: .7rem; font-weight: 700; color: #fff; background: var(--indigo); border-radius: 2px; padding: 0 .4rem; margin-left: .5rem; line-height: 1.5; }
 </style>
 </head>
 <body>
-  <header class="site-head">
+<header class="site-head">
 <h1><a class="brand" href="./"><svg class="logo" viewBox="0 0 100 100" aria-hidden="true"><rect x="10" y="16" width="80" height="10" fill="#1f2430"/><rect x="18" y="32" width="12" height="48" fill="#34466e"/><rect x="44" y="32" width="12" height="48" fill="#2f6f5e"/><rect x="70" y="32" width="12" height="48" fill="#9c3d54"/><rect x="10" y="84" width="80" height="6" fill="#1f2430"/></svg>アゴラ</a></h1>
 <a class="box-link" href="?box">目安箱</a>
 </header>
 <p id="msg"></p>
 
-<!-- 議論のルール・個人情報の取り扱い -->
+<!-- 使い方・議論のルール・個人情報の取り扱い -->
 <section>
-    <details>
+  <details>
     <summary><b>このサイトの使い方</b></summary>
     <ol>
       <li><b>登録する</b>：メールアドレス・パスワード・仮名を入力して「新規登録」を押します。届いたメールのリンクを開いてから「確認しました」を押すと、書き込めるようになります。</li>
@@ -326,9 +326,8 @@
       <li><b>答えを書く</b>：問いのページで「あなたの答えを書く」を押し、あなたの答え（立場）とその理由を書きます。1つの問いに、いくつもの答えが並びます。</li>
       <li><b>賛成・反対のコメントを書く</b>：答えやコメントの下に、賛成または反対の理由を重ねていきます。同意できないときは、理由を添えて反対のコメントを書いてください。</li>
       <li><b>「一理ある」を押す</b>：結論に同意するかどうかではなく、よい指摘だと思ったときに押します。自分と反対の立場の投稿にも押せます。</li>
-      <li><b>マイページで振り返る</b>：自分の投稿と、それに付いたコメントや「一理ある」を確認できます。</li>
-      <li><b>その他</b>：投稿は15分以内なら直せます。ルールに反する投稿は「通報」してください。問いのページから、X・LINEで共有することもできます。</li>
-            <li>運営者の投稿には「運営」の印が付きます。印のない投稿は、名前が「運営」や「管理人」でも運営者のものではありません。</li>
+      <li><b>マイページで振り返る</b>：自分の投稿と、それに付いたコメントや「一理ある」を確認できます。仮名の変更（30日に1回まで）もここでできます。</li>
+      <li><b>その他</b>：投稿は15分以内なら直せます。ルールに反する投稿は「通報」してください。問いのページから、X・LINEで共有することもできます。サイトへのご意見は、右上の「目安箱」へどうぞ。</li>
     </ol>
   </details>
   <details>
@@ -338,16 +337,17 @@
       <li>答えや、賛成・反対のコメントには、かならず理由を書いてください。</li>
       <li>1つのコメントには、1つの論点だけを書いてください。</li>
       <li>自分や他人を特定できる情報（本名・住所・所属など）は書かないでください。</li>
-      <li>投稿は後から削除できません。直せるのは投稿から15分以内だけです。内容をよく確かめてから投稿してください。</li>
+      <li>投稿は後から削除できません。直せるのは投稿から15分以内だけです。内容をよく確かめてから投稿してください。投稿できるのは1分間に3件までです。</li>
       <li>ルールに反する投稿は「通報」してください。通報が3件たまった投稿は折りたたまれ、運営者が予告なく削除することがあります。</li>
+      <li>運営者の投稿には「運営」の印が付きます。印のない投稿は、名前が「運営」や「管理人」でも運営者のものではありません。</li>
     </ol>
   </details>
   <details>
     <summary><b>個人情報の取り扱い</b></summary>
     <p>このサイトは試作版で、個人が運営しています。</p>
-    <p><b>取得する情報</b>：メールアドレス、パスワード、仮名、投稿の内容と日時</p>
+    <p><b>取得する情報</b>：メールアドレス、パスワード、仮名、投稿の内容と日時、目安箱に送られた内容</p>
     <p><b>利用目的</b>：メールアドレスは、ログインと本人確認、確認メール・パスワード再設定メールの送信、お問い合わせへの対応、ルール違反への対応にのみ使います。</p>
-    <p><b>公開される情報</b>：仮名と投稿内容・日時は、誰でも閲覧できます。メールアドレスは公開せず、法令に基づく場合を除いて第三者に提供しません。</p>
+    <p><b>公開される情報</b>：仮名と投稿内容・日時は、誰でも閲覧できます。メールアドレスと目安箱の内容は公開せず、法令に基づく場合を除いて第三者に提供しません。</p>
     <p><b>保管</b>：情報は Google が提供する Firebase に保管されます。パスワードは暗号化された形で保管され、運営者も見ることはできません。</p>
     <p><b>アカウントの削除</b>：マイページからいつでも削除できます。削除すると、メールアドレス・パスワード・仮名が消去されます。投稿した内容は議論のつながりを保つために残り、「退会したユーザー」の投稿として表示されます。</p>
     <p><b>お問い合わせ</b>：投稿の削除の希望や、個人情報に関するお問い合わせは、【ここに連絡先】までご連絡ください。</p>
@@ -421,7 +421,7 @@
     <h2>自分の投稿</h2>
     <ul id="myPostList" class="recent"><li class="empty">読み込み中…</li></ul>
   </section>
-    <section id="nameBox" class="hidden">
+  <section id="nameBox" class="hidden">
     <h2>仮名の変更</h2>
     <p class="meta" id="nameNote"></p>
     <label>新しい仮名（30字まで）<input id="newName" maxlength="30"></label>
@@ -438,6 +438,7 @@
     </details>
   </section>
 </div>
+
 <!-- 目安箱 -->
 <div id="boxView" class="hidden">
   <p><a href="./">← トップに戻る</a></p>
@@ -456,6 +457,7 @@
     <p id="boxNote" class="meta"></p>
   </section>
 </div>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
 import {
@@ -490,6 +492,7 @@ const el = (tag, cls, text) => {
 };
 const timeOf = (p) => p.createdAt ? p.createdAt.toMillis() : Date.now();
 const whenText = (p) => p.createdAt ? p.createdAt.toDate().toLocaleString("ja-JP") : "送信中…";
+const DAY = 24 * 60 * 60 * 1000;
 
 // ---------- ジャンル ----------
 // 左がデータベースに保存する値（ルールと一致させる）、右が画面に出す名前
@@ -518,10 +521,11 @@ for (const key of Object.keys(CATEGORIES)) {
   $("filterCategory").append(new Option(catName(key), key));
 }
 
-// ---------- 仮名の取得 ----------
-  // 運営者（UIDで見分ける。仮名は関係ない）
-const ADMIN_UID = "ここに自分のUID";
+// ---------- 運営者（UIDで見分ける。仮名は関係ない） ----------
+const ADMIN_UID = "jBT17SO8dWUY6tRfVuGNUmBj7Pw2";
 const adminBadge = (uid) => (uid === ADMIN_UID ? [el("span", "admin-badge", "運営")] : []);
+
+// ---------- 仮名の取得 ----------
 const nameCache = {};
 async function getName(uid) {
   if (!(uid in nameCache)) {
@@ -560,6 +564,15 @@ $("signupBtn").onclick = async () => {
   $("me").textContent = name;
   try { await sendEmailVerification(cred.user); } catch (e) {}
   say("登録しました。確認メールを送りました。");
+};
+
+$("loginBtn").onclick = async () => {
+  try {
+    await signInWithEmailAndPassword(auth, $("email").value.trim(), $("password").value);
+    say("");
+  } catch (e) {
+    say("メールアドレスまたはパスワードが正しくありません。");
+  }
 };
 
 $("resetBtn").onclick = async () => {
@@ -631,6 +644,7 @@ async function savePost({ body, parentId, rootId, stance, category, parentAuthor
   await batch.commit();
   return ref.id;
 }
+
 // ボタンの横にメッセージを出す
 const RATE_MSG = "1分間に投稿できるのは3件までです。少し待ってから、もう一度投稿してください。";
 function showNote(btn, text) {
@@ -641,17 +655,18 @@ function showNote(btn, text) {
   }
   s.textContent = text;
 }
+
 // 新しい問い
 $("thesisBtn").onclick = async () => {
   const body = $("thesisBody").value.trim();
-  if (e.message === "rate") showNote($("thesisBtn"), RATE_MSG);
-else say("投稿できませんでした。");
+  if (!body) return say("問いを入力してください。");
   try {
     const id = await savePost({ body, parentId: null, rootId: null, stance: null, category: $("thesisCategory").value });
     location.href = "?q=" + encodeURIComponent(id);   // 立てた問いのページへ移動
   } catch (e) {
-if (e.message === "rate") showNote($("thesisBtn"), RATE_MSG);
-else say("投稿できませんでした。");
+    console.error(e);
+    if (e.message === "rate") showNote($("thesisBtn"), RATE_MSG);
+    else say("投稿できませんでした。");
   }
 };
 
@@ -687,7 +702,6 @@ let listTheses = [];
 let unsubList = null;
 let dayPosts = [];
 let recentPosts = [];
-const DAY = 24 * 60 * 60 * 1000;
 
 function startHome() {
   renderHistory();
@@ -871,7 +885,7 @@ function startThread(rootId) {
 async function renderDebate() {
   const root = nodes.find((n) => n.id === currentRootId);
   if (!root) return;
-  document.title = short(root.body, 30) + "｜哲学の問い";
+  document.title = short(root.body, 30) + "｜アゴラ";
   // 親ごとに子をまとめる（答え→賛成→反対、それぞれ古い順）
   const children = {};
   for (const n of nodes) {
@@ -889,7 +903,7 @@ async function renderDebate() {
   const rootMeta = el("div", "meta");
   rootMeta.append(el("span", "cat", catName(root.category)),
                   document.createTextNode(nameCache[root.authorId] + "　" + whenText(root)));
-    rootMeta.append(...adminBadge(root.authorId));
+  rootMeta.append(...adminBadge(root.authorId));
   if (root.updatedAt) rootMeta.append(el("span", "edited", "（編集済み）"));
   top.append(bodyBox(root, "thesis text"), rootMeta, shareRow(root), actions(root));
   if (!children[root.id]) {
@@ -962,7 +976,7 @@ function childList(parentId, children) {
       head.append(el("span", "label " + n.stance, STANCE[n.stance] || ""),
                   document.createTextNode(nameCache[n.authorId] + "　" + whenText(n)));
     }
-        head.append(...adminBadge(n.authorId));
+    head.append(...adminBadge(n.authorId));
     if (n.updatedAt) head.append(el("span", "edited", "（編集済み）"));
     node.append(head, bodyBox(n, "text"), actions(n), childList(n.id, children));
     wrap.append(node);
@@ -1049,7 +1063,7 @@ function reportButton(target) {
 }
 
 // 書き込みボタンと書き込み欄
-//   問い → 「答えを書く」
+//   問い → 「あなたの答えを書く」
 //   答え・コメント → 「一理ある」「賛成のコメントを書く」「反対のコメントを書く」
 //   自分の投稿（15分以内）→ 「編集」 ／ 他人の投稿 → 「通報」
 function actions(target) {
@@ -1094,20 +1108,21 @@ function actions(target) {
     ta.value = openForm.text;
     ta.oninput = () => { openForm.text = ta.value; };
     const send = el("button", "small", "投稿");
+    const cancel = el("button", "small", "やめる");
     send.onclick = async () => {
       const body = ta.value.trim();
-      if (e.message === "rate") showNote(cancel, RATE_MSG);
-else say("投稿できませんでした。");
+      if (!body) return say("内容を入力してください。");
       try {
         await savePost({ body, parentId: target.id, rootId: currentRootId, stance: openForm.stance, parentAuthorId: target.authorId });
         openForm = null;
         say("");
         renderDebate();
       } catch (e) {
-say(e.message === "rate" ? "1分間に投稿できるのは3件までです。少し待ってから、もう一度投稿してください。" : "投稿できませんでした。");
+        console.error(e);
+        if (e.message === "rate") showNote(cancel, RATE_MSG);
+        else say("投稿できませんでした。");
       }
     };
-    const cancel = el("button", "small", "やめる");
     cancel.onclick = () => { openForm = null; renderDebate(); };
     box.append(el("div", "meta", openForm.stance === "answer" ? "あなたの答え" : STANCE[openForm.stance] + "のコメント"), ta, send, cancel);
     setTimeout(() => ta.focus(), 0);
@@ -1153,7 +1168,7 @@ let myStarted = false;
 function startMyPage(user) {
   $("homeView").classList.add("hidden");
   $("myView").classList.remove("hidden");
-  document.title = "マイページ｜哲学の問い";
+  document.title = "マイページ｜アゴラ";
   if (!user) {
     $("reactList").replaceChildren(el("li", "empty", "ログインすると、マイページが見られます。"));
     $("myPostList").replaceChildren();
@@ -1246,6 +1261,7 @@ async function renderMyPage(uid, since, myPosts, replies, agrees) {
   $("myPostList").replaceChildren(...(postItems.length ? postItems
     : [el("li", "empty", "まだ投稿がありません。")]));
 }
+
 // 仮名の変更（30日に1回まで。制限はセキュリティルールでもかけている）
 const NAME_DAYS = 30;
 function setupNameChange(user) {
@@ -1274,12 +1290,13 @@ function setupNameChange(user) {
       $("me").textContent = name;
       say("仮名を「" + name + "」に変更しました。");
     } catch (e) {
-      say("変更できませんでした。仮名の変更は30日に1回までです。");
+      say("変更できませんでした。仮名の変更は30日に1回までです。また、「管理」「運営」「公式」などを含む仮名は使えません。");
     }
     refresh();
   };
   refresh();
 }
+
 // アカウントの削除（パスワードで本人確認 → 仮名を消去 → アカウントを削除）
 function setupDelete(user) {
   $("deleteBox").classList.remove("hidden");
@@ -1304,11 +1321,12 @@ function setupDelete(user) {
     }
   };
 }
+
 // ============ 目安箱（読めるのは運営者だけ） ============
 function startBox(user) {
   $("homeView").classList.add("hidden");
   $("boxView").classList.remove("hidden");
-  document.title = "目安箱｜哲学の問い";
+  document.title = "目安箱｜アゴラ";
   const ok = !!user && user.emailVerified;
   $("boxForm").classList.toggle("hidden", !ok);
   $("boxNote").textContent = !user ? "ログインすると送れます。"
@@ -1334,13 +1352,14 @@ $("boxBtn").onclick = async () => {
   $("boxBtn").disabled = false;
 };
 $("boxBody").oninput = () => { $("boxDone").textContent = ""; };   // 書き始めたら表示を消す
-// ============ どちらのページを表示するか ============
-// ?q=問いのID → 問いのページ ／ ?me → マイページ ／ それ以外 → トップページ
+
+// ============ どのページを表示するか ============
+// ?q=問いのID → 問いのページ ／ ?me → マイページ ／ ?box → 目安箱 ／ それ以外 → トップページ
 const params = new URLSearchParams(location.search);
 const threadId = params.get("q");
 if (threadId) startThread(threadId);
 else if (params.has("me")) onAuthStateChanged(auth, (user) => startMyPage(user));
-  else if (params.has("box")) onAuthStateChanged(auth, (user) => startBox(user));
+else if (params.has("box")) onAuthStateChanged(auth, (user) => startBox(user));
 else startHome();
 if (params.has("deleted")) say("アカウントを削除しました。ご利用ありがとうございました。");
 </script>
