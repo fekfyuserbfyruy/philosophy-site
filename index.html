@@ -291,11 +291,21 @@
     select { min-width: 0; width: 100%; }
   }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+    /* 右上の目安箱 */
+  .corner { display: flex; justify-content: flex-end; margin-top: 1rem; }
+  .corner a {
+    font-size: .82rem; text-decoration: none;
+    color: var(--indigo); border: 1px solid var(--rule); border-radius: 999px;
+    padding: .15rem .9rem; background: var(--sheet);
+  }
+  .corner a:hover { border-color: var(--indigo); }
+  .corner + h1 { margin-top: 1.2rem; }
 </style>
 </head>
 <body>
+<div class="corner"><a href="?box">目安箱</a></div>
 <h1>アゴラ</h1>
-  <nav class="topnav"><a href="./">トップ</a><a href="?box">目安箱</a></nav>
+<nav class="topnav"><a href="./">トップ</a></nav>
 <p id="msg"></p>
 
 <!-- 議論のルール・個人情報の取り扱い -->
