@@ -498,29 +498,53 @@ const DAY = 24 * 60 * 60 * 1000;
 
 // ---------- ジャンル ----------
 // 左がデータベースに保存する値（ルールと一致させる）、右が画面に出す名前
-const CATEGORIES = {
-  metaphysics:  "形而上学（存在・時間・自由意志など）",
-  epistemology: "認識論（知識・真理・懐疑など）",
-  ethics:       "倫理学（善悪・正義・生き方など）",
-  political:    "政治・社会哲学",
-  mind:         "心の哲学（意識・自己など）",
-  language:     "言語哲学・論理学",
-  science:      "科学哲学",
-  aesthetics:   "美学（美・芸術）",
-  religion:     "宗教哲学",
-  life:         "人生・実存",
-  other:        "その他"
-};
+const CATEGORY_GROUPS = [
+  ["哲学", {
+    metaphysics:  "形而上学（存在・時間・自由意志など）",
+    epistemology: "認識論（知識・真理・懐疑など）",
+    ethics:       "倫理学（善悪・正義・生き方など）",
+    mind:         "心の哲学（意識・自己など）",
+    language:     "言語哲学・論理学",
+    science:      "科学哲学",
+    aesthetics:   "美学（美・芸術）",
+    religion:     "宗教哲学"
+  }],
+  ["社会・暮らし", {
+    political:    "政治・社会",
+    economy:      "お金・経済",
+    work:         "仕事・働き方",
+    education:    "教育・学び",
+    technology:   "科学技術・AI",
+    environment:  "自然・環境",
+    health:       "医療・いのち",
+    history:      "歴史"
+  }],
+  ["人生・人間関係", {
+    life:          "人生・生き方",
+    relationships: "恋愛・家族・人間関係",
+    everyday:      "日常のふしぎ"
+  }],
+  ["その他", {
+    other:        "その他"
+  }]
+];
+const CATEGORIES = Object.assign({}, ...CATEGORY_GROUPS.map(([, cats]) => cats));
 const catName = (key) => {
   const full = CATEGORIES[key];
   return full ? full.replace(/（.*）/, "") : "未分類";   // 一覧では短い名前だけ表示
 };
-for (const [key, label] of Object.entries(CATEGORIES)) {
-  $("thesisCategory").append(new Option(label, key));
-}
 $("filterCategory").append(new Option("すべて", ""));
-for (const key of Object.keys(CATEGORIES)) {
-  $("filterCategory").append(new Option(catName(key), key));
+for (const [group, cats] of CATEGORY_GROUPS) {
+  const g1 = document.createElement("optgroup");      // 選ぶ欄の中の見出し
+  const g2 = document.createElement("optgroup");
+  g1.label = group;
+  g2.label = group;
+  for (const [key, label] of Object.entries(cats)) {
+    g1.append(new Option(label, key));
+    g2.append(new Option(catName(key), key));
+  }
+  $("thesisCategory").append(g1);
+  $("filterCategory").append(g2);
 }
 
 // ---------- 運営者（UIDで見分ける。仮名は関係ない） ----------
