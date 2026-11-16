@@ -416,6 +416,12 @@
       <button id="homeQMore" class="small more hidden">もっと見る</button>
     </div>
   </section>
+    <section id="homeNewBox" class="hidden">
+    <h2>新しい問いを立てる</h2>
+    <label>ジャンル <select id="homeCategory"><option value="">ジャンルを選んでください</option></select></label>
+    <textarea id="homeThesisBody" maxlength="5000" placeholder="例：自由意志は存在するのか？"></textarea>
+    <button id="homeThesisBtn">投稿</button><a class="rule-link" href="./#rulesInfo" target="_blank" rel="noopener">議論のルール</a>
+  </section>
   <section class="genre-box">
     <details>
       <summary><h2>ジャンルから探す</h2><span class="note" id="genreCount"></span></summary>
@@ -609,7 +615,13 @@ for (const [group, cats] of CATEGORY_GROUPS) {
   box.append(grid);
   $("genreList").append(box);
 }
-
+// ホームの「新しい問いを立てる」のジャンル選択（グループごとに見出しを付ける）
+for (const [group, cats] of CATEGORY_GROUPS) {
+  const g = document.createElement("optgroup");
+  g.label = group;
+  for (const [key, label] of Object.entries(cats)) g.append(new Option(label, key));
+  $("homeCategory").append(g);
+}
 // ---------- 運営者（UIDで見分ける。仮名は関係ない） ----------
 const ADMIN_UID = "jBT17SO8dWUY6tRfVuGNUmBj7Pw2";
 const adminBadge = (uid) => (uid === ADMIN_UID ? [el("span", "admin-badge", "運営")] : []);
@@ -678,6 +690,7 @@ async function refreshAuthUI(user) {
   $("userBox").classList.toggle("hidden", !user);
   $("verifyBox").classList.toggle("hidden", !user || user.emailVerified);
   $("newThesisBox").classList.toggle("hidden", !canWrite());
+    $("homeNewBox").classList.toggle("hidden", !canWrite());
   if (user) $("me").textContent = await getName(user.uid);
   if (currentRootId) renderDebate();   // 書き込みボタンの表示が変わる
 }
@@ -770,7 +783,22 @@ $("thesisBtn").onclick = async () => {
     else say("投稿できませんでした。");
   }
 };
-
+// 新しい問い（ホームから。ジャンルを選んでもらう）
+$("homeThesisBtn").onclick = async () => {
+  const btn = $("homeThesisBtn");
+  const category = $("homeCategory").value;
+  const body = $("homeThesisBody").value.trim();
+  if (!category) return showNote(btn, "ジャンルを選んでください。");
+  if (!body) return showNote(btn, "問いを入力してください。");
+  try {
+    const id = await savePost({ body, parentId: null, rootId: null, stance: null, category });
+    location.href = "?q=" + encodeURIComponent(id);   // 立てた問いのページへ移動
+  } catch (e) {
+    console.error(e);
+    if (e.message === "rate") showNote(btn, RATE_MSG);
+    else say("投稿できませんでした。");
+  }
+};
 // 投稿の種類：答え（問いへの立場）／賛成／反対
 const STANCE = { answer: "答え", pro: "賛成", con: "反対" };
 const ORDER = { answer: 0, pro: 1, con: 2 };
