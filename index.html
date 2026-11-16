@@ -643,7 +643,8 @@ else say("投稿できませんでした。");
     const id = await savePost({ body, parentId: null, rootId: null, stance: null, category: $("thesisCategory").value });
     location.href = "?q=" + encodeURIComponent(id);   // 立てた問いのページへ移動
   } catch (e) {
-say(e.message === "rate" ? "1分間に投稿できるのは3件までです。少し待ってから、もう一度投稿してください。" : "投稿できませんでした。");
+if (e.message === "rate") showNote($("thesisBtn"), RATE_MSG);
+else say("投稿できませんでした。");
   }
 };
 
