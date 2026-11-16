@@ -539,25 +539,27 @@ async function getName(uid) {
 $("signupBtn").onclick = async () => {
   const name = $("displayName").value.trim();
   if (!name) return say("新規登録には仮名を入力してください。");
+  let cred;
   try {
-    const cred = await createUserWithEmailAndPassword(auth, $("email").value.trim(), $("password").value);
+    cred = await createUserWithEmailAndPassword(auth, $("email").value.trim(), $("password").value);
+  } catch (e) {
+    return say({
+      "auth/email-already-in-use": "このメールアドレスはすでに登録されています。「ログイン」を押してください。",
+      "auth/invalid-email": "メールアドレスの形式が正しくありません。",
+      "auth/weak-password": "パスワードは6文字以上にしてください。",
+      "auth/too-many-requests": "試した回数が多すぎます。しばらく待ってから、もう一度お試しください。"
+    }[e.code] || "登録できませんでした。（" + e.code + "）");
+  }
+  try {
     await setDoc(doc(db, "users", cred.user.uid), { displayName: name, createdAt: serverTimestamp() });
-    nameCache[cred.user.uid] = name;
-    $("me").textContent = name;
-    await sendEmailVerification(cred.user);
-    say("登録しました。確認メールを送りました。");
   } catch (e) {
-    say("登録できませんでした。メールアドレスの形式と、パスワードが6文字以上かを確認してください。");
+    try { await deleteUser(cred.user); } catch (e2) {}   // 仮名が保存できなければ、作ったアカウントも消す
+    return say("この仮名は使えません。「管理」「運営」「公式」などを含まない仮名にしてください。");
   }
-};
-
-$("loginBtn").onclick = async () => {
-  try {
-    await signInWithEmailAndPassword(auth, $("email").value.trim(), $("password").value);
-    say("");
-  } catch (e) {
-    say("メールアドレスまたはパスワードが正しくありません。");
-  }
+  nameCache[cred.user.uid] = name;
+  $("me").textContent = name;
+  try { await sendEmailVerification(cred.user); } catch (e) {}
+  say("登録しました。確認メールを送りました。");
 };
 
 $("resetBtn").onclick = async () => {
