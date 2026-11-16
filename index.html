@@ -295,6 +295,7 @@
 </head>
 <body>
 <h1>アゴラ</h1>
+  <nav class="topnav"><a href="./">トップ</a><a href="?box">目安箱</a></nav>
 <p id="msg"></p>
 
 <!-- 議論のルール・個人情報の取り扱い -->
@@ -418,7 +419,24 @@
     </details>
   </section>
 </div>
-
+<!-- 目安箱 -->
+<div id="boxView" class="hidden">
+  <p><a href="./">← トップに戻る</a></p>
+  <section>
+    <h2>目安箱</h2>
+    <p class="meta">サイトへのご意見・ご要望をお寄せください。内容は運営者だけが読み、ほかの人には公開されません。個別の返信はしていません。本名や連絡先は書かないでください。</p>
+    <div id="boxForm">
+      <label>種類 <select id="boxKind">
+        <option value="request">機能の要望</option>
+        <option value="bug">不具合の報告</option>
+        <option value="other">その他のご意見</option>
+      </select></label>
+      <textarea id="boxBody" maxlength="2000" placeholder="例：問いを言葉で検索できるようにしてほしい"></textarea>
+      <button id="boxBtn">目安箱に入れる</button>
+    </div>
+    <p id="boxNote" class="meta"></p>
+  </section>
+</div>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
 import {
@@ -1237,13 +1255,41 @@ function setupDelete(user) {
     }
   };
 }
-
+// ============ 目安箱（読めるのは運営者だけ） ============
+function startBox(user) {
+  $("homeView").classList.add("hidden");
+  $("boxView").classList.remove("hidden");
+  document.title = "目安箱｜哲学の問い";
+  const ok = !!user && user.emailVerified;
+  $("boxForm").classList.toggle("hidden", !ok);
+  $("boxNote").textContent = !user ? "ログインすると送れます。"
+    : !user.emailVerified ? "メールアドレスの確認が済むと送れます。" : "";
+}
+$("boxBtn").onclick = async () => {
+  const body = $("boxBody").value.trim();
+  if (!body) return say("内容を入力してください。");
+  $("boxBtn").disabled = true;
+  try {
+    await setDoc(doc(collection(db, "suggestions")), {
+      uid: auth.currentUser.uid,
+      kind: $("boxKind").value,
+      body: body,
+      createdAt: serverTimestamp()
+    });
+    $("boxBody").value = "";
+    say("目安箱に入れました。ご意見ありがとうございます。");
+  } catch (e) {
+    say("送れませんでした。時間をおいてもう一度お試しください。");
+  }
+  $("boxBtn").disabled = false;
+};
 // ============ どちらのページを表示するか ============
 // ?q=問いのID → 問いのページ ／ ?me → マイページ ／ それ以外 → トップページ
 const params = new URLSearchParams(location.search);
 const threadId = params.get("q");
 if (threadId) startThread(threadId);
 else if (params.has("me")) onAuthStateChanged(auth, (user) => startMyPage(user));
+  else if (params.has("box")) onAuthStateChanged(auth, (user) => startBox(user));
 else startHome();
 if (params.has("deleted")) say("アカウントを削除しました。ご利用ありがとうございました。");
 </script>
