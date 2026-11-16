@@ -9,7 +9,7 @@
 <meta name="description" content="様々な問いを立て、答えを書き、賛成・反対のコメントを重ねて考えを深める場所です。">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="アゴラ">
-<meta property="og:title" content="アゴラ｜様々な問いを立て、答え、賛否を重ねる">
+<meta property="og:title" content="アゴラ｜様々な問いを、みんなで考える広場">
 <meta property="og:description" content="様々な問いを立て、答えを書き、賛成・反対のコメントを重ねて考えを深める場所です。">
 <meta property="og:url" content="https://fekfyuserbfyruy.github.io/philosophy-site/">
 <meta property="og:image" content="https://fekfyuserbfyruy.github.io/philosophy-site/ogp.png">
@@ -71,6 +71,7 @@
     padding: .15rem .9rem; background: var(--sheet);
   }
   .box-link:hover { border-color: var(--indigo); }
+  .tagline { font-size: .9rem; color: var(--ink-soft); letter-spacing: .04em; margin-top: .2rem; margin-bottom: .4rem; }
 
   section {
     background: var(--sheet);
@@ -141,6 +142,16 @@
   .text { white-space: pre-wrap; }
   .hidden { display: none; }
   a { color: var(--indigo); cursor: pointer; text-underline-offset: 3px; }
+
+  /* ジャンル一覧 */
+  .genre-group + .genre-group { margin-top: 1.1rem; }
+  .genre-group h3 { font-family: var(--gothic); font-size: .8rem; font-weight: 500; color: var(--ink-soft); margin: 0 0 .5rem; }
+  .genre-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr)); gap: .5rem; }
+  .genre-grid a { display: block; padding: .6rem .8rem; background: #fff; border: 1px solid var(--rule); border-radius: 4px; color: var(--ink); text-decoration: none; }
+  .genre-grid a:hover { border-color: var(--indigo); background: #f3f5f2; }
+  .g-name { display: block; font-family: var(--mincho); font-weight: 700; font-size: 1rem; line-height: 1.5; }
+  .g-hint { display: block; font-size: .72rem; color: var(--ink-soft); line-height: 1.5; }
+  .genre-title { font-family: var(--mincho); font-size: 1.6rem; margin: .4rem auto 1rem; }
 
   /* 問いの一覧：問いそのものを主役に */
   a.thesis-item, .rank a, .recent a { display: block; color: inherit; text-decoration: none; }
@@ -307,7 +318,6 @@
     select { min-width: 0; width: 100%; }
   }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
-    .tagline { font-size: .9rem; color: var(--ink-soft); letter-spacing: .04em; margin-top: .2rem; margin-bottom: .4rem; }
 </style>
 </head>
 <body>
@@ -315,7 +325,7 @@
 <h1><a class="brand" href="./"><svg class="logo" viewBox="0 0 100 100" aria-hidden="true"><rect x="10" y="16" width="80" height="10" fill="#1f2430"/><rect x="18" y="32" width="12" height="48" fill="#34466e"/><rect x="44" y="32" width="12" height="48" fill="#2f6f5e"/><rect x="70" y="32" width="12" height="48" fill="#9c3d54"/><rect x="10" y="84" width="80" height="6" fill="#1f2430"/></svg>アゴラ</a></h1>
 <a class="box-link" href="?box">目安箱</a>
 </header>
-  <p class="tagline">様々な問いを、みんなで考える広場</p>
+<p class="tagline">様々な問いを、みんなで考える広場</p>
 <p id="msg"></p>
 
 <!-- 使い方・議論のルール・個人情報の取り扱い -->
@@ -324,7 +334,7 @@
     <summary><b>このサイトの使い方</b></summary>
     <ol>
       <li><b>登録する</b>：メールアドレス・パスワード・仮名を入力して「新規登録」を押します。届いたメールのリンクを開いてから「確認しました」を押すと、書き込めるようになります。</li>
-      <li><b>問いを立てる</b>：ジャンルを選んで、考えてみたい問いを投稿します。（例：自由意志は存在するのか？）</li>
+      <li><b>問いを立てる</b>：ホームの「ジャンルから探す」でジャンルを選び、そのページで考えてみたい問いを投稿します。（例：自由意志は存在するのか？）</li>
       <li><b>答えを書く</b>：問いのページで「あなたの答えを書く」を押し、あなたの答え（立場）とその理由を書きます。1つの問いに、いくつもの答えが並びます。</li>
       <li><b>賛成・反対のコメントを書く</b>：答えやコメントの下に、賛成または反対の理由を重ねていきます。同意できないときは、理由を添えて反対のコメントを書いてください。</li>
       <li><b>「一理ある」を押す</b>：結論に同意するかどうかではなく、よい指摘だと思ったときに押します。自分と反対の立場の投稿にも押せます。</li>
@@ -351,6 +361,7 @@
     <p><b>利用目的</b>：メールアドレスは、ログインと本人確認、確認メール・パスワード再設定メールの送信、お問い合わせへの対応、ルール違反への対応にのみ使います。</p>
     <p><b>公開される情報</b>：仮名と投稿内容・日時は、誰でも閲覧できます。メールアドレスと目安箱の内容は公開せず、法令に基づく場合を除いて第三者に提供しません。</p>
     <p><b>保管</b>：情報は Google が提供する Firebase に保管されます。パスワードは暗号化された形で保管され、運営者も見ることはできません。</p>
+    <p><b>アクセス解析</b>：サイトの利用状況を知るために Google アナリティクスを使っています。Cookie を使って、閲覧したページや利用している環境などの情報を、個人を特定しない形で集めます。集められたくない場合は、<a href="https://tools.google.com/dlpage/gaoptout?hl=ja" target="_blank" rel="noopener">Google アナリティクス オプトアウト アドオン</a>で止められます。データの扱いについては、<a href="https://policies.google.com/technologies/partner-sites?hl=ja" target="_blank" rel="noopener">Google のポリシー</a>をご覧ください。</p>
     <p><b>アカウントの削除</b>：マイページからいつでも削除できます。削除すると、メールアドレス・パスワード・仮名が消去されます。投稿した内容は議論のつながりを保つために残り、「退会したユーザー」の投稿として表示されます。</p>
     <p><b>お問い合わせ</b>：投稿の削除の希望や、個人情報に関するお問い合わせは、【ここに連絡先】までご連絡ください。</p>
   </details>
@@ -378,13 +389,11 @@
   <button id="resendBtn" class="small">確認メールをもう一度送る</button>
 </section>
 
-<!-- 一覧画面 -->
+<!-- ホーム：ジャンル一覧など -->
 <div id="homeView">
-  <section id="newThesisBox" class="hidden">
-    <h2>新しい問いを立てる</h2>
-    <label>ジャンル <select id="thesisCategory"></select></label>
-    <textarea id="thesisBody" maxlength="5000" placeholder="例：自由意志は存在するのか？"></textarea>
-    <button id="thesisBtn">投稿</button>
+  <section>
+    <h2>ジャンルから探す</h2>
+    <div id="genreList"></div>
   </section>
   <section id="historyBox" class="hidden">
     <h2>最近見た問い <span class="note">この端末にだけ保存されます</span><button id="clearHistory" class="small">履歴を消す</button></h2>
@@ -398,9 +407,19 @@
     <h2>新着の投稿</h2>
     <ul id="recentList" class="recent"><li class="empty">読み込み中…</li></ul>
   </section>
+</div>
+
+<!-- ジャンルのページ -->
+<div id="genreView" class="hidden">
+  <p><a href="./">← ジャンル一覧に戻る</a></p>
+  <h2 id="genreTitle" class="genre-title"></h2>
+  <section id="newThesisBox" class="hidden">
+    <h2>この分野で新しい問いを立てる</h2>
+    <textarea id="thesisBody" maxlength="5000" placeholder="例：自由意志は存在するのか？"></textarea>
+    <button id="thesisBtn">投稿</button>
+  </section>
   <section>
     <h2>問いの一覧</h2>
-    <label>ジャンルで絞り込む <select id="filterCategory"></select></label>
     <div id="thesisList">読み込み中…</div>
     <button id="moreBtn" class="small hidden">もっと見る</button>
   </section>
@@ -408,13 +427,13 @@
 
 <!-- 議論画面 -->
 <div id="debateView" class="hidden">
-  <p><a id="backLink" href="./">← 問いの一覧に戻る</a></p>
+  <p><a id="backLink" href="./">← ホームに戻る</a></p>
   <section id="debateBox">読み込み中…</section>
 </div>
 
 <!-- マイページ -->
 <div id="myView" class="hidden">
-  <p><a href="./">← トップに戻る</a></p>
+  <p><a href="./">← ホームに戻る</a></p>
   <section>
     <h2>自分への反応</h2>
     <ul id="reactList" class="recent"><li class="empty">読み込み中…</li></ul>
@@ -443,7 +462,7 @@
 
 <!-- 目安箱 -->
 <div id="boxView" class="hidden">
-  <p><a href="./">← トップに戻る</a></p>
+  <p><a href="./">← ホームに戻る</a></p>
   <section>
     <h2>目安箱</h2>
     <p class="meta">サイトへのご意見・ご要望をお寄せください。内容は運営者だけが読み、ほかの人には公開されません。個別の返信はしていません。本名や連絡先は書かないでください。</p>
@@ -471,6 +490,7 @@ import {
   getFirestore, doc, setDoc, getDoc, deleteDoc, updateDoc, collection, writeBatch, increment,
   query, where, orderBy, limit, onSnapshot, serverTimestamp, Timestamp
 } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-analytics.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCUd7ST9PwUUbDitqpIQvf5XQcMgcBXLoQ",
@@ -478,12 +498,14 @@ const firebaseConfig = {
   projectId: "philosophy-site-25949",
   storageBucket: "philosophy-site-25949.firebasestorage.app",
   messagingSenderId: "41871063058",
-  appId: "1:41871063058:web:5c0d9b64f4af3986d980cb"
+  appId: "1:41871063058:web:5c0d9b64f4af3986d980cb",
+  measurementId: "G-RPQ3DVB2Q6"
 };
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+try { getAnalytics(app); } catch (e) {}   // アクセス解析（運営者だけがコンソールで見られる）
 const $ = (id) => document.getElementById(id);
 const say = (text) => { $("msg").textContent = text; };
 const el = (tag, cls, text) => {
@@ -533,18 +555,21 @@ const catName = (key) => {
   const full = CATEGORIES[key];
   return full ? full.replace(/（.*）/, "") : "未分類";   // 一覧では短い名前だけ表示
 };
-$("filterCategory").append(new Option("すべて", ""));
+// ホームのジャンル一覧（グループごとに並べる）
 for (const [group, cats] of CATEGORY_GROUPS) {
-  const g1 = document.createElement("optgroup");      // 選ぶ欄の中の見出し
-  const g2 = document.createElement("optgroup");
-  g1.label = group;
-  g2.label = group;
+  const box = el("div", "genre-group");
+  box.append(el("h3", "", group));
+  const grid = el("div", "genre-grid");
   for (const [key, label] of Object.entries(cats)) {
-    g1.append(new Option(label, key));
-    g2.append(new Option(catName(key), key));
+    const a = el("a");
+    a.href = "?g=" + key;
+    a.append(el("span", "g-name", catName(key)));
+    const hint = (label.match(/（(.*)）/) || [])[1];   // かっこの中の説明があれば小さく出す
+    if (hint) a.append(el("span", "g-hint", hint));
+    grid.append(a);
   }
-  $("thesisCategory").append(g1);
-  $("filterCategory").append(g2);
+  box.append(grid);
+  $("genreList").append(box);
 }
 
 // ---------- 運営者（UIDで見分ける。仮名は関係ない） ----------
@@ -584,7 +609,7 @@ $("signupBtn").onclick = async () => {
     await setDoc(doc(db, "users", cred.user.uid), { displayName: name, createdAt: serverTimestamp() });
   } catch (e) {
     try { await deleteUser(cred.user); } catch (e2) {}   // 仮名が保存できなければ、作ったアカウントも消す
-    return say("この仮名は使えません。「管理」「運営」「公式」などを含まない仮名にしてください。");
+    return say("この仮名は使えません。10字以内で、「管理」「運営」「公式」などを含まない仮名にしてください。");
   }
   nameCache[cred.user.uid] = name;
   $("me").textContent = name;
@@ -682,12 +707,12 @@ function showNote(btn, text) {
   s.textContent = text;
 }
 
-// 新しい問い
+// 新しい問い（今いるジャンルのページから立てる）
 $("thesisBtn").onclick = async () => {
   const body = $("thesisBody").value.trim();
   if (!body) return say("問いを入力してください。");
   try {
-    const id = await savePost({ body, parentId: null, rootId: null, stance: null, category: $("thesisCategory").value });
+    const id = await savePost({ body, parentId: null, rootId: null, stance: null, category: currentGenre });
     location.href = "?q=" + encodeURIComponent(id);   // 立てた問いのページへ移動
   } catch (e) {
     console.error(e);
@@ -721,19 +746,12 @@ async function thesisData(id) {
   return thesisStore[id];
 }
 
-// ============ トップページ ============
-const PAGE = 20;                // 問いの一覧を一度に読む件数
-let listLimit = PAGE;
-let listTheses = [];
-let unsubList = null;
+// ============ ホーム ============
 let dayPosts = [];
 let recentPosts = [];
 
 function startHome() {
   renderHistory();
-  subscribeList();
-  $("filterCategory").onchange = () => { listLimit = PAGE; subscribeList(); };
-  $("moreBtn").onclick = () => { listLimit += PAGE; subscribeList(); };
 
   // この24時間の書き込み（ランキング用）
   onSnapshot(query(collection(db, "posts"), where("createdAt", ">=", Timestamp.fromMillis(Date.now() - DAY))), (snap) => {
@@ -749,40 +767,6 @@ function startHome() {
     for (const p of recentPosts) if (!p.parentId) thesisStore[p.id] = p;
     renderRecent();
   }, () => { $("recentList").replaceChildren(el("li", "empty", "読み込めませんでした。")); });
-}
-
-// 問いの一覧：新しい順に20件ずつ読む（ジャンルで絞り込んだときも同じ）
-function subscribeList() {
-  if (unsubList) unsubList();
-  const filter = $("filterCategory").value;
-  const posts = collection(db, "posts");
-  const q = filter
-    ? query(posts, where("category", "==", filter), orderBy("createdAt", "desc"), limit(listLimit))
-    : query(posts, where("parentId", "==", null), orderBy("createdAt", "desc"), limit(listLimit));
-  unsubList = onSnapshot(q, (snap) => {
-    listTheses = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-    for (const t of listTheses) thesisStore[t.id] = t;
-    $("moreBtn").classList.toggle("hidden", snap.size < listLimit);   // まだ続きがありそうなら表示
-    renderList();
-  }, (e) => {
-    console.error(e);   // インデックスが未作成のときは、ここに作成用のリンクが出る
-    $("thesisList").textContent = "読み込めませんでした。";
-  });
-}
-
-async function renderList() {
-  const box = $("thesisList");
-  if (listTheses.length === 0) { box.textContent = "まだ問いがありません。"; return; }
-  const items = await Promise.all(listTheses.map(async (t) => {
-    const a = el("a", "thesis-item");
-    a.href = threadUrl(t.id);
-    const meta = el("div", "meta");
-    meta.append(el("span", "cat", catName(t.category)),
-                document.createTextNode((await getName(t.authorId)) + "　" + whenText(t)));
-    a.append(el("div", "text", bodyOf(t)), meta);
-    return a;
-  }));
-  box.replaceChildren(...items);
 }
 
 // この24時間で盛り上がっている問い（答え・コメントの数）
@@ -827,7 +811,7 @@ async function renderRecent() {
     if (p.parentId) {
       head.append(el("span", "label " + p.stance, STANCE[p.stance] || ""));
     } else {
-      head.append(el("span", "tag-thesis", "新しい問い"));
+      head.append(el("span", "tag-thesis", "新しい問い"), el("span", "cat", catName(p.category)));
     }
     head.append(document.createTextNode((await getName(p.authorId)) + "　" + whenText(p)));
     a.append(head, el("div", "text", short(bodyOf(p), 80)));
@@ -837,6 +821,60 @@ async function renderRecent() {
     }
     li.append(a);
     return li;
+  }));
+  box.replaceChildren(...items);
+}
+
+// ============ ジャンルのページ（?g=ジャンル） ============
+const PAGE = 20;                // 問いの一覧を一度に読む件数
+let listLimit = PAGE;
+let listTheses = [];
+let unsubList = null;
+let currentGenre = null;
+
+function startGenre(key) {
+  $("homeView").classList.add("hidden");
+  $("genreView").classList.remove("hidden");
+  if (!CATEGORIES[key]) {
+    $("genreTitle").textContent = "このジャンルは見つかりませんでした。";
+    $("newThesisBox").style.display = "none";
+    $("thesisList").textContent = "";
+    return;
+  }
+  currentGenre = key;
+  $("genreTitle").textContent = catName(key);
+  document.title = catName(key) + "｜アゴラ";
+  $("moreBtn").onclick = () => { listLimit += PAGE; subscribeList(); };
+  subscribeList();
+}
+
+// そのジャンルの問いを、新しい順に20件ずつ読む
+function subscribeList() {
+  if (unsubList) unsubList();
+  const q = query(collection(db, "posts"), where("category", "==", currentGenre),
+                  orderBy("createdAt", "desc"), limit(listLimit));
+  unsubList = onSnapshot(q, (snap) => {
+    listTheses = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    for (const t of listTheses) thesisStore[t.id] = t;
+    $("moreBtn").classList.toggle("hidden", snap.size < listLimit);   // まだ続きがありそうなら表示
+    renderList();
+  }, (e) => {
+    console.error(e);   // インデックスが未作成のときは、ここに作成用のリンクが出る
+    $("thesisList").textContent = "読み込めませんでした。";
+  });
+}
+
+async function renderList() {
+  const box = $("thesisList");
+  if (listTheses.length === 0) { box.textContent = "まだ問いがありません。最初の問いを立ててみましょう。"; return; }
+  const items = await Promise.all(listTheses.map(async (t) => {
+    const a = el("a", "thesis-item");
+    a.href = threadUrl(t.id);
+    const meta = el("div", "meta");
+    meta.append(document.createTextNode((await getName(t.authorId)) + "　" + whenText(t)));
+    meta.append(...adminBadge(t.authorId));
+    a.append(el("div", "text", bodyOf(t)), meta);
+    return a;
   }));
   box.replaceChildren(...items);
 }
@@ -895,7 +933,14 @@ function startThread(rootId) {
       $("debateBox").textContent = "この問いは見つかりませんでした。";
       return;
     }
-    if (!recorded) { addHistory(root); recorded = true; }   // 閲覧履歴に記録（開いたときに1回）
+    if (!recorded) {
+      addHistory(root);                                    // 閲覧履歴に記録（開いたときに1回）
+      if (CATEGORIES[root.category]) {                     // 戻るリンクを、その問いのジャンルのページにする
+        $("backLink").href = "?g=" + root.category;
+        $("backLink").textContent = "← " + catName(root.category) + "の問いの一覧に戻る";
+      }
+      recorded = true;
+    }
     renderDebate();
   }, () => { $("debateBox").textContent = "読み込めませんでした。"; });
   onSnapshot(query(collection(db, "agrees"), where("rootId", "==", rootId)), (snap) => {
@@ -1273,7 +1318,7 @@ async function renderMyPage(uid, since, myPosts, replies, agrees) {
     link.href = threadUrl(p.rootId || p.id);
     const head = el("div", "meta");
     if (p.parentId) head.append(el("span", "label " + p.stance, STANCE[p.stance] || ""));
-    else head.append(el("span", "tag-thesis", "問い"));
+    else head.append(el("span", "tag-thesis", "問い"), el("span", "cat", catName(p.category)));
     head.append(document.createTextNode(whenText(p)));
     if (agreeCount[p.id]) head.append(el("span", "agree-count", "一理ある " + agreeCount[p.id]));
     link.append(head, el("div", "text", short(p.body, 80)));
@@ -1380,10 +1425,11 @@ $("boxBtn").onclick = async () => {
 $("boxBody").oninput = () => { $("boxDone").textContent = ""; };   // 書き始めたら表示を消す
 
 // ============ どのページを表示するか ============
-// ?q=問いのID → 問いのページ ／ ?me → マイページ ／ ?box → 目安箱 ／ それ以外 → トップページ
+// ?q=問いのID → 問いのページ ／ ?g=ジャンル → ジャンルのページ ／ ?me → マイページ ／ ?box → 目安箱 ／ それ以外 → ホーム
 const params = new URLSearchParams(location.search);
 const threadId = params.get("q");
 if (threadId) startThread(threadId);
+else if (params.has("g")) startGenre(params.get("g"));
 else if (params.has("me")) onAuthStateChanged(auth, (user) => startMyPage(user));
 else if (params.has("box")) onAuthStateChanged(auth, (user) => startBox(user));
 else startHome();
